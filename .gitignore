@@ -1,0 +1,26 @@
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Laravel / PHP
+/backend/vendor/
+/backend/node_modules/
+/backend/storage/*.key
+/backend/storage/logs/*
+/backend/bootstrap/cache/*.php
+
+# Vue / Node.js
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.vite/
+
+# IDE and OS files
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and temporary files
+*.log
+*.tmp
