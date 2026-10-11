@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'full_name',
@@ -44,5 +45,13 @@ class Person extends Model
     public function member(): HasOne
     {
         return $this->hasOne(Member::class);
+    }
+
+    /**
+     * Get the registrations associated with this person.
+     */    
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(Registration::class);
     }
 }
