@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -19,6 +20,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Generate absolute URLs using the public Laravel address.
+        // Docker's internal "web" hostname must not appear in email links.
+        URL::forceRootUrl(config('app.url'));
     }
 }
