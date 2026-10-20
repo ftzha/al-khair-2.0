@@ -52,11 +52,41 @@ al-khair-2.0/
 
 ## Development Status
 
-**Status:** Initial development
+**Status:** M4 implemented and verified; awaiting commit approval.
 
-The development environment has been configured, and the initial architecture and business workflows have been planned.
+- M1: Project setup, identity and authentication backend.
+- M2: Registration and committee approval backend.
+- M3: Vue authentication, session restoration and email verification.
+- M4: Member application management and committee review interface.
 
-Application features will be implemented incrementally, with an emphasis on maintainability, validation, authorization, and automated testing.
+### M4 Features
+
+Members can create and list applications, edit phone/address in DRAFT or CHANGES_REQUESTED, and submit or resubmit after verifying their email. Name and date of birth are read-only. Each submitted revision preserves its snapshot, submission timestamp and committee feedback.
+
+COMMITTEE and ADMIN users can access a paginated pending-review queue, inspect revision history, and approve, reject or request changes. Rejection and change requests require a reason. The interface confirms decisions and prevents repeated clicks while requests are pending.
+
+Laravel remains authoritative for ownership, account status, roles, email verification and self-review restrictions. Application approval does not create or activate membership.
+
+### Verification
+
+Backend tests and frontend tests, lint, type checking and production build passed in the local Docker environment, as reported by the developer on October 20, 2026. Manual browser testing also passed the member submission → committee change request → member resubmission → committee approval workflow.
+
+Run checks from the repository root in Ubuntu:
+
+```bash
+docker compose exec app vendor/bin/pint --dirty --format agent
+docker compose exec app php artisan test --compact
+docker compose exec frontend npm run lint
+docker compose exec frontend npm run type-check
+docker compose exec frontend npm run test:unit -- --run
+docker compose exec frontend npm run build
+```
+
+### Next Milestones
+
+- M5: Fees, invoices and payments.
+- M6: Membership lifecycle and eligibility.
+- M7: Integration, security and v1.0 release preparation.
 
 ## Development Approach
 

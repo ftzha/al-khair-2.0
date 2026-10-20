@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { hasCommitteeAccess } from '@/types/auth'
 
 // Lazy loading downloads each page component only when needed.
 // This helps keep the initial JavaScript bundle smaller.
@@ -30,6 +31,30 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
+      path: '/applications',
+      name: 'applications',
+      component: () => import('@/views/ApplicationsView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/applications/:id',
+      name: 'application-detail',
+      component: () => import('@/views/ApplicationDetailView.vue'),
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/committee/applications',
+      name: 'committee-applications',
+      component: () => import('@/views/CommitteeApplicationsView.vue'),
+      meta: { requiresAuth: true, requiresCommittee: true },
+    },
+    {
+      path: '/committee/applications/:id',
+      name: 'committee-application-detail',
+      component: () => import('@/views/CommitteeApplicationDetailView.vue'),
+      meta: { requiresAuth: true, requiresCommittee: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/dashboard',
     },
@@ -52,6 +77,10 @@ router.beforeEach(async (to) => {
       name: 'login',
       query: { redirect: to.fullPath },
     }
+  }
+
+  if (to.meta.requiresCommittee && !hasCommitteeAccess(auth.user?.role)) {
+    return { name: 'dashboard' }
   }
 
   if (to.meta.guestOnly && authenticated) {

@@ -1,9 +1,11 @@
 
 <script setup lang="ts">
+import { RouterLink } from 'vue-router'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { AxiosError } from 'axios'
+import { hasCommitteeAccess } from '@/types/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
@@ -80,6 +82,8 @@ async function handleRefreshVerification() {
 <template>
     <main>
         <h1>Dashboard</h1>
+        <RouterLink to="/applications">My Applications</RouterLink>
+        <RouterLink v-if="hasCommitteeAccess(auth.user?.role)" to="/committee/applications">Review Applications</RouterLink>
 
         <p>Welcome, {{ auth.user?.full_name }}!</p>
         <p>Email: {{ auth.user?.email }}</p>

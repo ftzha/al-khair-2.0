@@ -39,14 +39,17 @@ class RegistrationController extends Controller
         $this->ensureOwner($request->user(), $registration);
 
         $registration->load([
+            'person:id,full_name,date_of_birth',
             'submissions' => fn ($query) => $query
                 ->select([
                     'id',
                     'registration_id',
                     'revision',
+                    'snapshot',
                     'submitted_at',
                 ])
                 ->orderBy('revision'),
+            'submissions.reviews' => fn ($query) => $query->orderBy('reviewed_at')->orderBy('id'),
         ]);
 
         return response()->json([
@@ -55,7 +58,22 @@ class RegistrationController extends Controller
                 'type' => $registration->type,
                 'status' => $registration->status,
                 'draft_data' => $registration->draft_data,
-                'submissions' => $registration->submissions,
+                'applicant' => [
+                    'full_name' => $registration->person->full_name,
+                    'date_of_birth' => $registration->person->date_of_birth?->toDateString(),
+                ],
+                'submissions' => $registration->submissions->map(fn ($submission) => [
+                    'id' => $submission->id,
+                    'registration_id' => $submission->registration_id,
+                    'revision' => $submission->revision,
+                    'snapshot' => $submission->snapshot,
+                    'submitted_at' => $submission->submitted_at,
+                    'reviews' => $submission->reviews->map(fn ($review) => [
+                        'decision' => $review->decision,
+                        'reason' => $review->reason,
+                        'reviewed_at' => $review->reviewed_at,
+                    ]),
+                ]),
                 'created_at' => $registration->created_at,
             ],
         ]);

@@ -1,54 +1,57 @@
-# frontend
+# al Khair 2.0 Frontend
 
-This template should help get you started developing with Vue 3 in Vite.
+Vue 3 and TypeScript application using Pinia, Vue Router, Axios and Vite.
 
-## Recommended IDE Setup
+## Local Development
 
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+The frontend runs in the Docker Compose `frontend` service. From the repository root in Ubuntu:
 
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd)
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Type Support for `.vue` Imports in TS
-
-TypeScript cannot handle type information for `.vue` imports by default, so we replace the `tsc` CLI with `vue-tsc` for type checking. In editors, we need [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) to make the TypeScript language service aware of `.vue` types.
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
-npm install
+```bash
+docker compose up -d
 ```
 
-### Compile and Hot-Reload for Development
+Open `http://localhost:5173`. Vite forwards `/api` requests to the Compose `web` service. Authentication uses Sanctum bearer tokens stored in session storage; the server validates permissions for every protected API action.
 
-```sh
-npm run dev
+## Application Routes
+
+| Route | Access | Purpose |
+| --- | --- | --- |
+| `/register` | Guest | Create an account |
+| `/login` | Guest | Sign in |
+| `/dashboard` | Authenticated | Account and email verification controls |
+| `/applications` | Authenticated owner | List applications and create a draft |
+| `/applications/:id` | Authenticated owner | Edit contact details, submit and view revision feedback |
+| `/committee/applications` | COMMITTEE or ADMIN | Paginated pending-review queue |
+| `/committee/applications/:id` | COMMITTEE or ADMIN | Inspect snapshots and record review decisions |
+
+Frontend role guards guide navigation. Laravel enforces access independently, including ownership and the prohibition on reviewing your own submission.
+
+## Member Workflow
+
+1. Create a membership application draft from the dashboard's My Applications link.
+2. Edit phone number and address; name and date of birth are read-only.
+3. Verify the account email. Verification can be resent or refreshed from the application page.
+4. Confirm submission. The interface saves current contact details before submitting.
+5. View revision snapshots, review reasons and timestamps in Submission history.
+6. If changes are requested, update the contact details and confirm resubmission.
+
+Only DRAFT and CHANGES_REQUESTED applications are editable. An existing draft, pending application, change request or approved application prevents another application from being created.
+
+## Committee Workflow
+
+Sign in with a separate COMMITTEE or ADMIN account and choose Review Applications. Open an application, inspect its submitted revisions, choose a decision and confirm it. Reject and Request changes require a nonblank reason. Successful decisions disable review actions; uncertain write results trigger a state refresh rather than automatic retries.
+
+Approval completes application review; membership activation belongs to a later milestone. Local test accounts are created in the development database and credentials are not committed.
+
+## Checks
+
+Run from the repository root:
+
+```bash
+docker compose exec frontend npm run lint
+docker compose exec frontend npm run type-check
+docker compose exec frontend npm run test:unit -- --run
+docker compose exec frontend npm run build
 ```
 
-### Type-Check, Compile and Minify for Production
-
-```sh
-npm run build
-```
-
-### Run Unit Tests with [Vitest](https://vitest.dev/)
-
-```sh
-npm run test:unit
-```
-
-### Lint with [ESLint](https://eslint.org/)
-
-```sh
-npm run lint
-```
+`npm run lint` applies fixes. Tests cover application editing and submission, verification, history, committee reviews, pagination, API response handling and role-based route access.

@@ -53,3 +53,8 @@ export interface ValidationErrorResponse {
 export interface VerificationNotificationResponse {
     message: string
 }
+
+// Frontend access checks improve navigation; Laravel remains authoritative.
+export function hasCommitteeAccess(role: UserRole | null | undefined): boolean {
+    return role === 'COMMITTEE' || role === 'ADMIN'
+}
