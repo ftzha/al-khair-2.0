@@ -23,6 +23,7 @@ class AuthRegistrationTest extends TestCase
     {
         return [
             'full_name' => 'Test Member',
+            'date_of_birth' => '1990-01-01',
             'identity_number' => '900101-10-1234',
             'email' => 'member@example.com',
             'password' => 'Password123!',
@@ -47,6 +48,7 @@ class AuthRegistrationTest extends TestCase
         $user = User::with('person')->firstOrFail();
 
         $this->assertSame('Test Member', $user->person->full_name);
+        $this->assertSame('1990-01-01', $user->person->date_of_birth->toDateString());
         $this->assertTrue(Hash::check('Password123!', $user->password));
         $this->assertNull($user->email_verified_at);
 
@@ -59,6 +61,57 @@ class AuthRegistrationTest extends TestCase
             '900101101234',
             $user->person->getRawOriginal('identity_number')
         );
+    }
+
+    public function test_registration_requires_date_of_birth(): void
+    {
+        $payload = $this->validPayload();
+        unset($payload['date_of_birth']);
+
+        $this->postJson('/api/register', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('date_of_birth');
+
+        $this->assertDatabaseCount('persons', 0);
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public static function invalidBirthDates(): array
+    {
+        return [
+            'empty' => [''],
+            'null' => [null],
+            'invalid calendar date' => ['1990-02-30'],
+            'wrong format' => ['01/01/1990'],
+            'today' => ['2026-10-20'],
+            'future' => ['2026-10-21'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalidBirthDates')]
+    public function test_registration_rejects_invalid_birth_dates(?string $birthDate): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-10-20 12:00:00'));
+        $payload = $this->validPayload();
+        $payload['date_of_birth'] = $birthDate;
+
+        $this->postJson('/api/register', $payload)
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('date_of_birth');
+
+        $this->assertDatabaseCount('persons', 0);
+        $this->assertDatabaseCount('users', 0);
+    }
+
+    public function test_registration_preserves_a_manually_confirmed_century(): void
+    {
+        $payload = $this->validPayload();
+        $payload['identity_number'] = '200101-10-1234';
+        $payload['date_of_birth'] = '1920-01-01';
+
+        $this->postJson('/api/register', $payload)->assertCreated();
+
+        $this->assertSame('1920-01-01', User::firstOrFail()->person->date_of_birth->toDateString());
     }
 
     public function test_it_rejects_duplicate_emails(): void

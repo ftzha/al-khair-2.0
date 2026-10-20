@@ -68,6 +68,11 @@ Route::middleware(['auth:sanctum', 'account.active'])
         );
 
         Route::post(
+            '/{registration}/identity/reveal',
+            [CommitteeRegistrationController::class, 'revealIdentity']
+        )->middleware('throttle:6,1');
+
+        Route::post(
             '/{registration}/review',
             [CommitteeRegistrationController::class, 'review']
         );

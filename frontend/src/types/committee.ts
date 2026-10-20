@@ -17,6 +17,7 @@ export interface CommitteeApplicationPage {
 }
 
 export interface CommitteeApplicationDetail {
+  masked_identity_number: string
   id: number
   status: RegistrationStatus
   applicant_name: string

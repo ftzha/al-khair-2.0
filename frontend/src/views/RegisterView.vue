@@ -1,10 +1,11 @@
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { AxiosError } from 'axios'
 
 import { api } from '@/services/api'
+import { malaysiaToday, suggestNricDateOfBirth } from '@/services/identityDateOfBirth'
 import type {
   RegisterPayload,
   ValidationErrorResponse,
@@ -22,11 +23,23 @@ const router = useRouter()
 const form = reactive<RegisterPayload>({
   full_name: '',
   identity_number: '',
+  date_of_birth: '',
   email: '',
   password: '',
   password_confirmation: '',
 })
 
+// Autofill is a convenience, not identity verification. Preserve any manual DOB
+// correction when the identity number changes (including a century correction).
+const dobEdited = ref(false)
+watch(() => form.identity_number, (identity) => {
+  if (!dobEdited.value) form.date_of_birth = suggestNricDateOfBirth(identity) ?? ''
+})
+// Native date inputs accept ISO values while browsers localize their presentation.
+const latestBirthDate = () => {
+  const today = malaysiaToday()
+  return new Date(Date.parse(`${today}T00:00:00Z`) - 86400000).toISOString().slice(0, 10)
+}
 // Laravel validation errors are grouped by field name.
 const fieldErrors = ref<Record<string, string[]>>({})
 const errorMessage = ref('')
@@ -104,6 +117,28 @@ async function handleRegister() {
             />
             <small v-if="fieldErrors.identity_number" class="error">
                 {{ fieldErrors.identity_number[0] }}
+            </small>
+
+            <label for="date_of_birth">Date of Birth</label>
+            <input
+            id="date_of_birth"
+            v-model="form.date_of_birth"
+            type="date"
+            :max="latestBirthDate()"
+            autocomplete="bday"
+            required
+            aria-describedby="dob-help"
+            :aria-invalid="!!fieldErrors.date_of_birth"
+            @input="dobEdited = true"
+            />
+            <small id="dob-help">
+                Select your date of birth or enter it using the date field. Malaysian NRIC numbers can suggest a date of birth. Check the full year
+                and correct it if needed: the century cannot be determined from NRIC alone.
+                For other identity documents, enter your date of birth manually.
+                Date of birth cannot be edited after account creation.
+            </small>
+            <small v-if="fieldErrors.date_of_birth" class="error" role="alert">
+                {{ fieldErrors.date_of_birth[0] }}
             </small>
 
             <label for="email">Email</label>

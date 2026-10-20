@@ -22,7 +22,7 @@ function detail(status: 'DRAFT' | 'PENDING_REVIEW' | 'CHANGES_REQUESTED' = 'DRAF
   return {
     id: 7, type: 'NEW', status,
     draft_data: { phone_number: '0123456789', address: 'Existing address' },
-    applicant: { full_name: 'Test Applicant', date_of_birth: '1990-01-01' },
+    applicant: { masked_identity_number: '******-**-1234', full_name: 'Test Applicant', date_of_birth: '1990-01-01' },
     submissions: [], created_at: '2026-10-20T00:00:00Z',
   }
 }

@@ -36,7 +36,7 @@ class RegisterUserRequest extends FormRequest
             'password' => ['required', 'string', 'min:8', 'confirmed'],
             'phone_number' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:1000'],
-            'date_of_birth' => ['nullable', 'date', 'before:today'],
+            'date_of_birth' => ['required', 'date_format:Y-m-d', 'before:today'],
         ];
     }
 }

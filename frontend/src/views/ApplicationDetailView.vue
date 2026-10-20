@@ -191,6 +191,7 @@ watch(() => route.params.id, loadApplication, { immediate: true })
         <p>Name: {{ application.applicant?.full_name ?? auth.user?.full_name }}</p>
         <p>Date of birth: {{ application.applicant?.date_of_birth ?? 'Not available' }}</p>
         <p>Identity information is read-only.</p>
+        <p>Identity number: {{ application.applicant.masked_identity_number }}</p>
       </section>
       <form @submit.prevent="saveDraft">
         <h2>Contact details</h2>

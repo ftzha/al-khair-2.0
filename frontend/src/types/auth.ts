@@ -38,6 +38,7 @@ export interface MeResponse {
 export interface RegisterPayload {
     full_name: string
     identity_number: string
+    date_of_birth: string
     email: string
     password: string
     password_confirmation: string

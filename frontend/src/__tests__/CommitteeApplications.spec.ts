@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import CommitteeApplicationsView from '@/views/CommitteeApplicationsView.vue'
 import CommitteeApplicationDetailView from '@/views/CommitteeApplicationDetailView.vue'
@@ -14,12 +14,13 @@ vi.mock('@/services/committeeRegistrations', () => ({
     list: vi.fn<typeof committeeRegistrationsApi.list>(),
     detail: vi.fn<typeof committeeRegistrationsApi.detail>(),
     review: vi.fn<typeof committeeRegistrationsApi.review>(),
+    revealIdentity: vi.fn<typeof committeeRegistrationsApi.revealIdentity>(),
   },
 }))
 
 function detail(status: CommitteeApplicationDetail['status'] = 'PENDING_REVIEW'): CommitteeApplicationDetail {
   return {
-    id: 7, status, applicant_name: 'Test Applicant',
+    id: 7, status, applicant_name: 'Test Applicant', masked_identity_number: '******-**-1234',
     submissions: [{
       id: 11, revision: 1, submitted_at: '2026-10-20T00:00:00Z',
       snapshot: { full_name: 'Test Applicant', date_of_birth: '1990-01-01', phone_number: null, address: 'Submitted address' },
@@ -40,7 +41,50 @@ beforeEach(() => {
   vi.mocked(committeeRegistrationsApi.review).mockResolvedValue({ id: 9, decision: 'APPROVE', reason: null, reviewed_at: '2026-10-20T01:00:00Z' })
 })
 
+afterEach(() => { vi.useRealTimers() })
+
 describe('committee review screens', () => {
+  it('shows only a mask until reveal is requested and can hide the full number', async () => {
+    vi.mocked(committeeRegistrationsApi.revealIdentity).mockResolvedValue('900101101234')
+    const wrapper = mount(CommitteeApplicationDetailView)
+    await flushPromises()
+    expect(wrapper.text()).toContain('******-**-1234')
+    expect(wrapper.text()).not.toContain('900101101234')
+    expect(committeeRegistrationsApi.revealIdentity).not.toHaveBeenCalled()
+    await buttonWithText(wrapper, 'Reveal identity number').trigger('click')
+    await flushPromises()
+    expect(committeeRegistrationsApi.revealIdentity).toHaveBeenCalledExactlyOnceWith(7)
+    expect(wrapper.text()).toContain('900101101234')
+    await buttonWithText(wrapper, 'Hide identity number').trigger('click')
+    expect(wrapper.text()).not.toContain('900101101234')
+    expect(wrapper.text()).toContain('******-**-1234')
+    wrapper.unmount()
+  })
+
+  it('automatically hides a revealed identity after sixty seconds', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    vi.mocked(committeeRegistrationsApi.revealIdentity).mockResolvedValue('900101101234')
+    const wrapper = mount(CommitteeApplicationDetailView)
+    await flushPromises()
+    await buttonWithText(wrapper, 'Reveal identity number').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('900101101234')
+    await vi.advanceTimersByTimeAsync(60000)
+    expect(wrapper.text()).not.toContain('900101101234')
+    expect(wrapper.text()).toContain('******-**-1234')
+    wrapper.unmount()
+  })
+  it('retains the mask if revealing is forbidden', async () => {
+    vi.mocked(committeeRegistrationsApi.revealIdentity).mockRejectedValue({ isAxiosError: true, response: { status: 403 } })
+    const wrapper = mount(CommitteeApplicationDetailView)
+    await flushPromises()
+    await buttonWithText(wrapper, 'Reveal identity number').trigger('click')
+    await flushPromises()
+    expect(wrapper.text()).toContain('You do not have permission')
+    expect(wrapper.text()).toContain('******-**-1234')
+    expect(wrapper.text()).not.toContain('900101101234')
+  })
+
   it('shows an empty queue', async () => {
     vi.mocked(committeeRegistrationsApi.list).mockResolvedValue({ data: [], current_page: 1, last_page: 1, total: 0 })
     const wrapper = mount(CommitteeApplicationsView)

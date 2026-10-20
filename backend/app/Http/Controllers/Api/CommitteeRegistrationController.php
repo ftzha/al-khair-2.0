@@ -52,7 +52,7 @@ class CommitteeRegistrationController extends Controller
         $this->authorizeCommittee($request);
 
         $registration->load([
-            'person:id,full_name',
+            'person:id,full_name,identity_number',
             'submissions' => fn ($query) => $query
                 ->orderBy('revision'),
             'submissions.reviews',
@@ -63,6 +63,7 @@ class CommitteeRegistrationController extends Controller
                 'id' => $registration->id,
                 'status' => $registration->status,
                 'applicant_name' => $registration->person->full_name,
+                'masked_identity_number' => $registration->person->maskedIdentityNumber(),
                 'submissions' => $registration->submissions->map(fn ($submission) => [
                     'id' => $submission->id,
                     'revision' => $submission->revision,
@@ -78,6 +79,21 @@ class CommitteeRegistrationController extends Controller
         ]);
     }
 
+    public function revealIdentity(Request $request, Registration $registration): JsonResponse
+    {
+        $this->authorizeCommittee($request);
+
+        \Illuminate\Support\Facades\Log::info('Registration identity revealed.', [
+            'reviewer_id' => $request->user()->id,
+            'registration_id' => $registration->id,
+        ]);
+
+        return response()->json([
+            'data' => [
+                'identity_number' => $registration->person->identity_number,
+            ],
+        ])->header('Cache-Control', 'no-store, private')->header('Pragma', 'no-cache');
+    }
     public function review(
         ReviewRegistrationRequest $request,
         Registration $registration

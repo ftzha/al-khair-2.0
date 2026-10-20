@@ -24,7 +24,7 @@ export interface RegistrationDetail {
   status: RegistrationStatus
   draft_data: RegistrationDraft | null
   // Identity is provided by the owner-only detail endpoint and is never editable.
-  applicant: { full_name: string; date_of_birth: string | null }
+  applicant: { masked_identity_number: string; full_name: string; date_of_birth: string | null }
   submissions: RegistrationSubmission[]
   created_at: string
 }

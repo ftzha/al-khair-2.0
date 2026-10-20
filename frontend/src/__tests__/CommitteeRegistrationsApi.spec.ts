@@ -6,6 +6,12 @@ vi.mock('@/services/api', () => ({ api: { get: vi.fn<typeof api.get>(), post: vi
 beforeEach(() => vi.resetAllMocks())
 
 describe('committee registration API', () => {
+  it('requests full identity only through the explicit reveal endpoint', async () => {
+    vi.mocked(api.post).mockResolvedValue({ data: { data: { identity_number: '900101101234' } } })
+    expect(await committeeRegistrationsApi.revealIdentity(7)).toBe('900101101234')
+    expect(api.post).toHaveBeenCalledWith('/committee/registrations/7/identity/reveal')
+  })
+
   it('preserves pagination and sends the selected page', async () => {
     const page = { data: [], current_page: 2, last_page: 3, total: 31 }
     vi.mocked(api.get).mockResolvedValue({ data: page })

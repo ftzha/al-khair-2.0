@@ -39,7 +39,7 @@ class RegistrationController extends Controller
         $this->ensureOwner($request->user(), $registration);
 
         $registration->load([
-            'person:id,full_name,date_of_birth',
+            'person:id,full_name,date_of_birth,identity_number',
             'submissions' => fn ($query) => $query
                 ->select([
                     'id',
@@ -60,6 +60,7 @@ class RegistrationController extends Controller
                 'draft_data' => $registration->draft_data,
                 'applicant' => [
                     'full_name' => $registration->person->full_name,
+                    'masked_identity_number' => $registration->person->maskedIdentityNumber(),
                     'date_of_birth' => $registration->person->date_of_birth?->toDateString(),
                 ],
                 'submissions' => $registration->submissions->map(fn ($submission) => [

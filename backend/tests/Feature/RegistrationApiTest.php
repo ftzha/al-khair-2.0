@@ -66,6 +66,7 @@ class RegistrationApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.applicant', [
                 'full_name' => 'Test Applicant',
+                'masked_identity_number' => '******-**-1234',
                 'date_of_birth' => '1990-01-01',
             ])
             ->assertJsonMissingPath('data.identity_number')
