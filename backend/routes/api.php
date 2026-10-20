@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\CommitteePaymentController;
+use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\CommitteeRegistrationController;
@@ -77,3 +80,20 @@ Route::middleware(['auth:sanctum', 'account.active'])
             [CommitteeRegistrationController::class, 'review']
         );
     });
+Route::middleware(['auth:sanctum', 'account.active'])
+    ->prefix('invoices')
+    ->group(function () {
+        Route::get('/', [InvoiceController::class, 'index']);
+        Route::get('/{invoice}', [InvoiceController::class, 'show']);
+    });
+
+Route::middleware(['auth:sanctum', 'account.active'])->group(function () {
+    Route::get('/invoices/{invoice}/payments', [PaymentController::class, 'index']);
+    Route::post('/invoices/{invoice}/payments', [PaymentController::class, 'store'])->middleware('throttle:6,1');
+    Route::get('/payments/{payment}/receipt', [PaymentController::class, 'receipt'])->middleware('throttle:30,1');
+    Route::get('/committee/payments', [CommitteePaymentController::class, 'index']);
+    Route::get('/committee/payments/{payment}', [CommitteePaymentController::class, 'show']);
+    Route::post('/committee/payments/{payment}/review', [CommitteePaymentController::class, 'review'])->middleware('throttle:10,1');
+    Route::get('/committee/payment-invoices', [CommitteePaymentController::class, 'invoices']);
+    Route::post('/committee/payment-invoices/{invoice}/cash', [CommitteePaymentController::class, 'recordCash'])->middleware('throttle:10,1');
+});

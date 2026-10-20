@@ -19,6 +19,7 @@ class CommitteeRegistrationApiTest extends TestCase
         parent::setUp();
 
         config()->set('identity.lookup_key', str_repeat('a', 64));
+        $this->seed(\Database\Seeders\DemoFeeSeeder::class);
     }
 
     private function createAccount(

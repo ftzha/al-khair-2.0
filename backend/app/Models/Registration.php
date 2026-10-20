@@ -23,6 +23,11 @@ class Registration extends Model
         ];
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     public function person(): BelongsTo
     {
         return $this->belongsTo(Person::class);

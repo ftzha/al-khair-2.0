@@ -122,15 +122,23 @@ async function handleRefreshVerification() {
       </section>
     </div>
     <section class="card" aria-labelledby="actions-heading">
-      <h2 id="actions-heading">Applications</h2>
+      <h2 id="actions-heading">Applications &amp; billing</h2>
       <div class="action-grid">
         <RouterLink class="action-card" to="/applications">
           <strong>My Applications <span aria-hidden="true">→</span></strong>
           <span>Create a draft, update your contact details and follow your application status.</span>
         </RouterLink>
+        <RouterLink class="action-card" to="/invoices">
+          <strong>My Invoices <span aria-hidden="true">→</span></strong>
+          <span>View your fee breakdown, invoice status and payment due dates.</span>
+        </RouterLink>
         <RouterLink v-if="hasCommitteeAccess(auth.user?.role)" class="action-card" to="/committee/applications">
           <strong>Review Applications <span aria-hidden="true">→</span></strong>
           <span>Review submitted applications and record committee decisions.</span>
+        </RouterLink>
+        <RouterLink v-if="hasCommitteeAccess(auth.user?.role)" class="action-card" to="/committee/payments">
+          <strong>Verify Payments <span aria-hidden="true">→</span></strong>
+          <span>Review transfer receipts, record cash payments and verify independently.</span>
         </RouterLink>
       </div>
     </section>
@@ -147,7 +155,8 @@ p { line-height: 1.6; }
 .muted { color: #4c6055; }
 .dashboard-grid, .action-grid { display: grid; gap: 1rem; }
 .dashboard-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-.action-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+.action-grid { display: flex; flex-wrap: wrap; gap: 1rem; }
+.action-grid > .action-card { flex: 1 1 18rem; min-width: 0; }
 .card { margin-bottom: 1rem; padding: clamp(1rem, 3vw, 1.5rem); background: #fff; border: 1px solid #d8e3de; border-radius: 12px; }
 .verified { background: #f3faf5; }
 .pending { background: #fffbf0; border-color: #e8c77c; }

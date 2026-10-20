@@ -55,6 +55,29 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresCommittee: true },
     },
     {
+      path: '/invoices', name: 'invoices',
+      component: () => import('@/views/InvoicesView.vue'), meta: { requiresAuth: true },
+    },
+    {
+      path: '/invoices/:id', name: 'invoice-detail',
+      component: () => import('@/views/InvoiceDetailView.vue'), meta: { requiresAuth: true },
+    },
+    {
+      path: '/committee/payments', name: 'committee-payments',
+      component: () => import('@/views/CommitteePaymentsView.vue'),
+      meta: { requiresAuth: true, requiresCommittee: true },
+    },
+    {
+      path: '/committee/payments/cash', name: 'committee-cash-payment',
+      component: () => import('@/views/CashPaymentView.vue'),
+      meta: { requiresAuth: true, requiresCommittee: true },
+    },
+    {
+      path: '/committee/payments/:id', name: 'committee-payment-detail',
+      component: () => import('@/views/CommitteePaymentDetailView.vue'),
+      meta: { requiresAuth: true, requiresCommittee: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/dashboard',
     },

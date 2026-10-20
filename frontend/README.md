@@ -26,6 +26,16 @@ Open `http://localhost:5173`. Vite forwards `/api` requests to the Compose `web`
 
 Frontend role guards guide navigation. Laravel enforces access independently, including ownership and the prohibition on reviewing your own submission.
 
+## Payment Pages
+
+Members submit a full bank-transfer amount from invoice details, attaching a PDF/JPG/PNG receipt up to 2 MB and a transfer reference. Payments stay pending until independent committee verification. Receipt downloads use authenticated blob requests, without placing bearer tokens in URLs.
+
+Committee and Admin users open Verify Payments from the dashboard. The queue filters pending, verified and rejected payments. Reviewers inspect invoice items and receipts, then confirm verification or rejection. Rejection requires a reason. Cash payments are recorded against eligible unpaid invoices from the Record cash payment page and require a different verifier. Submitters and invoice owners cannot review their own payments. No membership activation is performed by these screens.
+
+## Invoice Pages
+
+Members can open My Invoices from the dashboard, browse paginated invoices, and inspect the saved fee items, MYR total, status, billing year, Malaysia-formatted issuance time and due date. The API restricts both list and detail access to the invoice owner, independently of frontend routing. Unpaid invoice details now include bank-transfer receipt submission, payment history and authenticated receipt downloads. Pending payments block another submission until reviewed.
+
 ## Identity Display
 
 Member and committee detail pages display only a masked identity number by default. COMMITTEE and ADMIN users can explicitly reveal the number through a separate authenticated, rate-limited endpoint. Reveal responses use no-store caching headers; access logs contain reviewer and registration IDs, never the number. The frontend retains the revealed value only in component memory and hides it after 60 seconds, when the tab is hidden, on reload/navigation, or when a review is recorded. Database encryption and lookup hashing are unchanged; full identity numbers remain absent from submission snapshots.

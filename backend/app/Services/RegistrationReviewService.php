@@ -10,6 +10,9 @@ use Illuminate\Validation\ValidationException;
 
 class RegistrationReviewService
 {
+    public function __construct(private readonly InvoiceService $invoices) {}
+
+
     public function review(
         Registration $registration,
         User $reviewer,
@@ -89,6 +92,11 @@ class RegistrationReviewService
             }
 
             $registration->save();
+
+            if ($decision === 'APPROVE') {
+                $this->invoices->createInitial($registration);
+            }
+
 
             return $review;
         });

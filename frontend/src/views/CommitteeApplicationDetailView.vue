@@ -233,7 +233,7 @@ watch(() => route.params.id, loadApplication, { immediate: true })
         </fieldset>
       </form>
       <p v-else>Review actions are unavailable for this application.</p>
-      <p class="footer-note">Application approval does not activate membership.</p>
+      <p class="footer-note">Approval also creates an unpaid initial invoice using the configured fees. Missing fee rates prevent approval. Application approval does not activate membership.</p>
     </template>
   </main>
 </template>
