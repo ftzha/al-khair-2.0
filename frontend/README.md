@@ -30,6 +30,10 @@ Frontend role guards guide navigation. Laravel enforces access independently, in
 
 Member and committee detail pages display only a masked identity number by default. COMMITTEE and ADMIN users can explicitly reveal the number through a separate authenticated, rate-limited endpoint. Reveal responses use no-store caching headers; access logs contain reviewer and registration IDs, never the number. The frontend retains the revealed value only in component memory and hides it after 60 seconds, when the tab is hidden, on reload/navigation, or when a review is recorded. Database encryption and lookup hashing are unchanged; full identity numbers remain absent from submission snapshots.
 
+## Date Display
+
+Dates are displayed as DD/MM/YYYY. Timestamps are displayed as DD/MM/YYYY, HH:mm MYT in Asia/Kuala_Lumpur, regardless of browser locale. DOB entry uses a native date picker whose presentation follows browser regional settings; API calendar dates remain YYYY-MM-DD. Reuse the shared date formatting functions for new screens.
+
 ## Account Registration
 
 Date of birth is required when creating an account. A complete Malaysian NRIC pattern can suggest a DOB; the user must check the full year because the century is ambiguous. The field stays editable before account creation, and manual corrections are preserved. Other identity documents require manual DOB entry. Laravel rejects missing, invalid, today or future birth dates. Existing accounts and historical submission snapshots are not backfilled.

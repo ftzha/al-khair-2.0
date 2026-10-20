@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { formatMalaysiaDate, formatMalaysiaDateTime } from '@/services/dateFormatting'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { committeeRegistrationsApi } from '@/services/committeeRegistrations'
@@ -162,20 +163,22 @@ watch(() => route.params.id, loadApplication, { immediate: true })
 
 <template>
   <main>
-    <RouterLink :to="{ name: 'committee-applications' }">Back to review queue</RouterLink>
+    <RouterLink class="back-link" :to="{ name: 'committee-applications' }">Back to review queue</RouterLink>
+    <p class="eyebrow">al Khair · Committee</p>
     <h1>Review Application</h1>
+    <p class="intro">Check the latest submitted details and earlier feedback before recording your decision.</p>
     <p v-if="loading" role="status">Loading application...</p>
-    <p v-if="errorMessage" role="alert">{{ errorMessage }}</p>
+    <p v-if="errorMessage" class="notice error" role="alert">{{ errorMessage }}</p>
     <ul v-if="Object.keys(fieldErrors).length" role="alert">
       <template v-for="(messages, field) in fieldErrors" :key="field">
         <li v-for="message in messages" :key="message">{{ message }}</li>
       </template>
     </ul>
-    <p v-if="successMessage" role="status">{{ successMessage }}</p>
+    <p v-if="successMessage" class="notice success" role="status">{{ successMessage }}</p>
     <button v-if="!loading" type="button" :disabled="reviewing" @click="loadApplication">Reload application</button>
     <template v-if="application && !loading">
       <h2>Application #{{ application.id }} — {{ application.applicant_name }}</h2>
-      <p>Status: {{ registrationStatusLabels[application.status] }}</p>
+      <p class="status-row">Status: <span class="badge" :class="application.status.toLowerCase()">{{ registrationStatusLabels[application.status] }}</span></p>
       <section aria-labelledby="identity-heading">
         <h2 id="identity-heading">Identity number</h2>
         <p class="identity-value">{{ revealedIdentity ?? application.masked_identity_number }}</p>
@@ -188,55 +191,96 @@ watch(() => route.params.id, loadApplication, { immediate: true })
       </section>
       <section aria-labelledby="history-heading">
         <h2 id="history-heading">Submitted revisions</h2>
+        <p class="muted">Latest revision first. Each revision preserves the details submitted at that time.</p>
         <p v-if="application.submissions.length === 0">No submitted revisions are available.</p>
-        <article v-for="submission in application.submissions" :key="submission.id">
-          <h3>Revision {{ submission.revision }}</h3>
-          <p>Submitted: {{ new Date(submission.submitted_at).toLocaleString() }}</p>
+        <article v-for="submission in application.submissions.slice().reverse()" :key="submission.id">
+          <h3>Revision {{ submission.revision }} <span v-if="submission.id === application.submissions[application.submissions.length - 1]?.id" class="badge latest">Latest submission</span></h3>
+          <p>Submitted: {{ formatMalaysiaDateTime(submission.submitted_at) }}</p>
           <dl>
             <dt>Name</dt><dd>{{ submission.snapshot.full_name }}</dd>
-            <dt>Date of birth</dt><dd>{{ submission.snapshot.date_of_birth ?? 'Not available' }}</dd>
+            <dt>Date of birth</dt><dd>{{ formatMalaysiaDate(submission.snapshot.date_of_birth) }}</dd>
             <dt>Phone number</dt><dd>{{ submission.snapshot.phone_number ?? 'Not provided' }}</dd>
             <dt>Address</dt><dd>{{ submission.snapshot.address ?? 'Not provided' }}</dd>
           </dl>
           <p v-if="submission.reviews.length === 0">No review decision recorded.</p>
-          <div v-for="(review, index) in submission.reviews" :key="index">
-            <p>{{ reviewDecisionLabels[review.decision] }} — {{ new Date(review.reviewed_at).toLocaleString() }}</p>
+          <div v-for="(review, index) in submission.reviews" :key="index" class="review-feedback">
+            <p>{{ reviewDecisionLabels[review.decision] }} — {{ formatMalaysiaDateTime(review.reviewed_at) }}</p>
             <p v-if="review.reason" class="review-reason">{{ review.reason }}</p>
           </div>
         </article>
       </section>
       <form v-if="canReview" @submit.prevent="prepareReview">
         <h2>Review latest submission</h2>
-        <p>You cannot review your own submission. Laravel checks this when recording the decision.</p>
+        <p class="muted">Review the latest submitted revision. You cannot review your own submission.</p>
         <fieldset :disabled="reviewing">
           <legend>Committee decision</legend>
-          <label for="review-decision">Decision</label>
+          <p><span class="required-marker" aria-hidden="true">*</span> Required field</p>
+          <label for="review-decision">Decision <span class="required-marker" aria-hidden="true">*</span></label>
           <select id="review-decision" v-model="decision">
             <option value="APPROVE">Approve</option>
             <option value="REJECT">Reject</option>
             <option value="REQUEST_CHANGES">Request changes</option>
           </select>
-          <label for="review-reason">Reason {{ needsReason ? '(required)' : '(optional)' }}</label>
-          <textarea id="review-reason" v-model="reason" maxlength="2000" :required="needsReason" :aria-invalid="!!fieldErrors.reason" />
+          <label for="review-reason">Reason <span v-if="needsReason" class="required-marker" aria-hidden="true">*</span><span v-else> (optional)</span></label>
+          <textarea id="review-reason" v-model="reason" maxlength="2000" rows="5" placeholder="Explain the decision and, if changes are needed, tell the applicant what to update." aria-describedby="review-help" :required="needsReason" :aria-invalid="!!fieldErrors.reason" />
+          <small id="review-help" class="muted">A reason is required for rejection or a change request. Maximum 2,000 characters.</small>
           <button v-if="!confirming" type="submit">Review decision</button>
-          <template v-else>
+          <div v-else class="confirmation">
             <p>Confirm this decision: {{ reviewDecisionLabels[decision] }}. This records a decision against the latest submitted revision.</p>
             <button type="button" @click="confirmReview">{{ reviewing ? 'Recording...' : 'Confirm decision' }}</button>
             <button type="button" @click="confirming = false">Cancel</button>
-          </template>
+          </div>
         </fieldset>
       </form>
       <p v-else>Review actions are unavailable for this application.</p>
-      <p>Application approval does not activate membership.</p>
+      <p class="footer-note">Application approval does not activate membership.</p>
     </template>
   </main>
 </template>
 
 <style scoped>
-main { max-width: 56rem; margin: 2rem auto; padding: 0 1rem; }
-article { border-bottom: 1px solid #ccc; padding-bottom: 1rem; }
-label, select, textarea { display: block; }
-select, textarea { box-sizing: border-box; width: 100%; margin: .5rem 0 1rem; }
-textarea { min-height: 6rem; }
+main { max-width: 60rem; margin: 2rem auto; padding: 0 1rem 2rem; color: #1c3029; }
+.back-link { display: inline-block; margin-bottom: 1.5rem; color: #185940; }
+.eyebrow { margin: 0; color: #185940; font-size: 0.85rem; font-weight: 600; }
+h1 { margin: 0.3rem 0 0.5rem; }
+h2 { font-size: 1.2rem; overflow-wrap: anywhere; }
+h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; font-size: 1.05rem; }
+p { line-height: 1.6; }
+.intro, .muted, .footer-note { color: #4c6055; }
+section, form { margin-top: 1.5rem; padding: clamp(1rem, 3vw, 1.5rem); border: 1px solid #d8e3de; border-radius: 12px; background: #fff; }
+section > h2, form > h2 { margin-top: 0; }
+.badge { display: inline-block; border-radius: 999px; padding: 0.3rem 0.75rem; font-size: 0.8rem; font-weight: 600; background: #eef1f0; color: #41564b; }
+.pending_review { background: #edf4fc; color: #234f7a; }
+.changes_requested { background: #fff4d8; color: #78520b; }
+.approved, .latest { background: #e6f5ec; color: #185940; }
+.rejected { background: #fff0ed; color: #a52b20; }
+.identity-value { font-family: ui-monospace, monospace; font-size: 1.2rem; letter-spacing: 0.08em; overflow-wrap: anywhere; }
+.privacy-note, .confirmation { padding: 1rem; border: 1px solid #e8c77c; border-radius: 8px; background: #fff7e3; color: #704a0b; }
+.privacy-note { font-size: 0.9rem; }
+article { margin-top: 1.25rem; padding: 1rem; border: 1px solid #d8e3de; border-radius: 8px; }
+dl { display: grid; grid-template-columns: 9rem minmax(0, 1fr); gap: 0.75rem 1rem; }
+dt { color: #4c6055; }
+dd { margin: 0; }
+.review-feedback { margin-top: 1rem; padding: 0.75rem 1rem; border-left: 3px solid #8caf9c; background: #f5f8f7; border-radius: 4px; }
+.review-feedback p { margin: 0.3rem 0; }
+fieldset { min-width: 0; border: 0; margin: 0; padding: 0; }
+legend { font-weight: 600; }
+label, select, textarea, small { display: block; }
+label { margin-top: 1rem; font-weight: 600; }
+select, textarea { box-sizing: border-box; width: 100%; padding: 0.75rem; margin: 0.5rem 0; border: 1px solid #82968b; border-radius: 6px; background: #fff; font: inherit; }
+textarea { min-height: 8rem; resize: vertical; }
+textarea::placeholder { color: #617168; opacity: 1; }
+small { line-height: 1.5; }
+button { min-height: 44px; margin: 0.75rem 0.5rem 0 0; padding: 0.65rem 1rem; border: 1px solid #185940; border-radius: 6px; background: #fff; color: #185940; font: inherit; cursor: pointer; }
+button[type='submit'], .confirmation button:first-of-type { background: #185940; color: #fff; }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+a:focus-visible, button:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid #a9d8c5; outline-offset: 3px; }
+.confirmation { margin-top: 1rem; }
+.notice { padding: 1rem; border-radius: 8px; }
+.error { background: #fff0ed; color: #b42318; }
+.success { background: #edf8f1; color: #185940; }
 .review-reason, dd { white-space: pre-wrap; overflow-wrap: anywhere; }
+.required-marker { color: #b42318; }
+.footer-note { padding: 0 0.25rem; font-size: 0.9rem; }
+@media (max-width: 480px) { dl { grid-template-columns: 1fr; gap: 0.3rem; } dd { margin-bottom: 0.75rem; } }
 </style>

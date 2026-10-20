@@ -93,9 +93,10 @@ async function handleRegister() {
     <main class="auth-page">
         <form class="auth-form" @submit.prevent="handleRegister">
             <h1>Create Account</h1>
-            <p>Join al Khair by creating your account.</p>
+            <p>Create your account to start a membership application.</p>
+            <small><span class="required-marker" aria-hidden="true">*</span> Required field</small>
 
-            <label for="full_name">Full Name</label>
+            <label for="full_name">Full Name <span class="required-marker" aria-hidden="true">*</span></label>
             <input
             id="full_name"
             v-model.trim="form.full_name"
@@ -103,23 +104,27 @@ async function handleRegister() {
             autocomplete="name"
             required
             />
+            <small id="fullname-help">Enter your full name as shown on your identity document.</small>
             <small v-if="fieldErrors.full_name" class="error">
                 {{ fieldErrors.full_name[0] }}
             </small>
 
-            <label for="identity_number">Identity Number</label>
+            <label for="identity_number">Identity Number <span class="required-marker" aria-hidden="true">*</span></label>
             <input
             id="identity_number"
             v-model.trim="form.identity_number"
             type="text"
             autocomplete="off"
+            placeholder="e.g. 990101-23-4455"
+            aria-describedby="identity-help"
             required
             />
+            <small id="identity-help">Enter your Malaysian NRIC or other identity document number.</small>
             <small v-if="fieldErrors.identity_number" class="error">
                 {{ fieldErrors.identity_number[0] }}
             </small>
 
-            <label for="date_of_birth">Date of Birth</label>
+            <label for="date_of_birth">Date of Birth <span class="required-marker" aria-hidden="true">*</span></label>
             <input
             id="date_of_birth"
             v-model="form.date_of_birth"
@@ -131,7 +136,7 @@ async function handleRegister() {
             :aria-invalid="!!fieldErrors.date_of_birth"
             @input="dobEdited = true"
             />
-            <small id="dob-help">
+            <small id="dob-help" class="dob-warning">
                 Select your date of birth or enter it using the date field. Malaysian NRIC numbers can suggest a date of birth. Check the full year
                 and correct it if needed: the century cannot be determined from NRIC alone.
                 For other identity documents, enter your date of birth manually.
@@ -141,35 +146,42 @@ async function handleRegister() {
                 {{ fieldErrors.date_of_birth[0] }}
             </small>
 
-            <label for="email">Email</label>
+            <label for="email">Email <span class="required-marker" aria-hidden="true">*</span></label>
             <input
             id="email"
             v-model.trim="form.email"
             type="email"
             autocomplete="email"
+            placeholder="e.g. name@example.com"
+            aria-describedby="email-help"
             required
             />
+            <small id="email-help">A verification link will be sent to this email address.</small>
             <small v-if="fieldErrors.email" class="error">
                 {{ fieldErrors.email[0] }}
             </small>
 
-            <label for="password">Password</label>
+            <label for="password">Password <span class="required-marker" aria-hidden="true">*</span></label>
             <input
             id="password"
             v-model="form.password"
+            placeholder="Create a password with at least 8 characters"
+            aria-describedby="password-help"
             type="password"
             autocomplete="new-password"
             minlength="8"
             required
             />
+            <small id="password-help">Use at least 8 characters.</small>
             <small v-if="fieldErrors.password" class="error">
                 {{ fieldErrors.password[0] }}
             </small>
 
-            <label for="password_confirmation">Confirm Password</label>
+            <label for="password_confirmation">Confirm Password <span class="required-marker" aria-hidden="true">*</span></label>
             <input
             id="password_confirmation"
             v-model="form.password_confirmation"
+            placeholder="Re-enter your password"
             type="password"
             autocomplete="new-password"
             minlength="8"
@@ -201,31 +213,51 @@ async function handleRegister() {
     min-height: 100vh;
     place-items: center;
     padding: 1.5rem;
+    background: #f5f8f7;
+    color: #1c3029;
 }
-
 .auth-form {
     display: grid;
-    gap: 0.75rem;
-    width: min(100%, 420px);
+    gap: 0.65rem;
+    box-sizing: border-box;
+    width: min(100%, 520px);
+    padding: clamp(1.25rem, 4vw, 2rem);
+    background: #fff;
+    border: 1px solid #d8e3de;
+    border-radius: 12px;
 }
-
+h1, p { margin: 0 0 0.5rem; }
+.auth-form label { font-weight: 600; margin-top: 0.65rem; }
 .auth-form input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
     padding: 0.75rem;
-    border: 1px solid #aaa;
+    border: 1px solid #82968b;
     border-radius: 6px;
+    font: inherit;
 }
-
+.auth-form input::placeholder { color: #617168; opacity: 1; }
+.auth-form input:focus-visible, .auth-form button:focus-visible {
+    outline: 3px solid #a9d8c5;
+    outline-offset: 2px;
+}
+small { line-height: 1.5; color: #4c6055; }
 .auth-form button {
+    min-height: 44px;
+    margin-top: 1rem;
     padding: 0.75rem;
+    border: 0;
+    border-radius: 6px;
+    background: #185940;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
     cursor: pointer;
 }
-
-.auth-form button:disabled {
-    cursor: wait;
-    opacity: 0.6;
-}
-
-.error {
-    color: #b42318;
-}
+.auth-form button:disabled { cursor: wait; opacity: 0.6; }
+.error { color: #b42318; }
+.required-marker { color: #b42318; }
+.required-note { font-size: 0.875rem; }
+.dob-warning { padding: 0.85rem 1rem; border: 1px solid #e8c77c; border-left: 4px solid #ad7413; border-radius: 6px; background: #fff7e3; color: #704a0b; line-height: 1.6; }
 </style>

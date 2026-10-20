@@ -30,6 +30,17 @@ function detail(status: 'DRAFT' | 'PENDING_REVIEW' | 'CHANGES_REQUESTED' = 'DRAF
 beforeEach(() => { vi.resetAllMocks() })
 
 describe('member applications', () => {
+  it('creates and opens a draft from the empty-state plus button', async () => {
+    vi.mocked(registrationsApi.list).mockResolvedValue([])
+    vi.mocked(registrationsApi.create).mockResolvedValue({ id: 7, status: 'DRAFT', draft_data: null })
+    const wrapper = mount(ApplicationsView)
+    await flushPromises()
+    await wrapper.get('button[aria-label="Create application draft"]').trigger('click')
+    await flushPromises()
+    expect(registrationsApi.create).toHaveBeenCalledTimes(1)
+    expect(push).toHaveBeenCalledWith({ name: 'application-detail', params: { id: 7 } })
+  })
+
   it('shows an empty state and opens a newly created draft', async () => {
     vi.mocked(registrationsApi.list).mockResolvedValue([])
     vi.mocked(registrationsApi.create).mockResolvedValue({ id: 7, status: 'DRAFT', draft_data: null })
@@ -64,7 +75,7 @@ describe('member applications', () => {
     vi.mocked(registrationsApi.update).mockResolvedValue({ id: 7, status: 'DRAFT', draft_data: detail().draft_data })
     const wrapper = mount(ApplicationDetailView)
     await flushPromises()
-    expect(wrapper.text()).toContain('1990-01-01')
+    expect(wrapper.text()).toContain('01/01/1990')
     await wrapper.get('#address').setValue('Updated address')
     await wrapper.get('form').trigger('submit')
     await flushPromises()

@@ -81,21 +81,24 @@ async function handleLogin() {
                 {{ notification.text }}
             </p>
 
-            <label for="email">Email</label>
+            <p class="required-note"><span class="required-marker" aria-hidden="true">*</span> Required field</p>
+            <label for="email">Email <span class="required-marker" aria-hidden="true">*</span></label>
             <input
                 id="email"
                 v-model.trim="email"
                 type="email"
                 autocomplete="email"
+                placeholder="e.g. name@example.com"
                 required
             />
 
-            <label for="password">Password</label>
+            <label for="password">Password <span class="required-marker" aria-hidden="true">*</span></label>
             <input
                 id="password"
                 v-model="password"
                 type="password"
                 autocomplete="current-password"
+                placeholder="Enter your password"
                 required
             />
 
@@ -121,39 +124,55 @@ async function handleLogin() {
     min-height: 100vh;
     place-items: center;
     padding: 1.5rem;
+    background: #f5f8f7;
+    color: #1c3029;
 }
-
 .auth-form {
     display: grid;
-    gap: 0.75rem;
-    width: min(100%, 400px);
+    gap: 0.65rem;
+    box-sizing: border-box;
+    width: min(100%, 520px);
+    padding: clamp(1.25rem, 4vw, 2rem);
+    background: #fff;
+    border: 1px solid #d8e3de;
+    border-radius: 12px;
 }
-
+h1, p { margin: 0 0 0.5rem; }
+.auth-form label { font-weight: 600; margin-top: 0.65rem; }
 .auth-form input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 44px;
     padding: 0.75rem;
-    border: 1px solid #aaa;
+    border: 1px solid #82968b;
     border-radius: 6px;
+    font: inherit;
 }
-
+.auth-form input::placeholder { color: #617168; opacity: 1; }
+.auth-form input:focus-visible, .auth-form button:focus-visible {
+    outline: 3px solid #a9d8c5;
+    outline-offset: 2px;
+}
+small { line-height: 1.5; color: #4c6055; }
 .auth-form button {
+    min-height: 44px;
+    margin-top: 1rem;
     padding: 0.75rem;
+    border: 0;
+    border-radius: 6px;
+    background: #185940;
+    color: #fff;
+    font: inherit;
+    font-weight: 600;
     cursor: pointer;
 }
+.auth-form button:disabled { cursor: wait; opacity: 0.6; }
+.error { color: #b42318; }
+.required-marker { color: #b42318; }
+.required-note { font-size: 0.875rem; }
 
-.auth-form button:disabled {
-    cursor: wait;
-    opacity: 0.6;
-}
-
-.error {
-    color: #b42318;
-}
-
-.success {
-  color: #067647;
-}
-
-.info {
-  color: #175cd3;
-}
+.success, .info, .error { padding: 0.75rem; border-radius: 6px; line-height: 1.5; }
+.success { background: #edf8f1; color: #185940; }
+.info { background: #edf4fc; color: #234f7a; }
+p.error { background: #fff0ed; }
 </style>
