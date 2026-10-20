@@ -126,7 +126,17 @@ docker compose exec app php artisan memberships:sync-statuses
 
 The renewal command uses the current Malaysia calendar year and does nothing outside January 1–30. Both commands tolerate retries and are scheduled hourly with overlap protection. The Laravel scheduler runner must be started separately (for example, `docker compose exec app php artisan schedule:work` during development); adding schedule entries does not start a background process. Renewals for a membership first activated in January can be generated on the next run or by running the renewal command directly before the cutoff.
 
-This checkpoint changes backend logic only and needs no migration or seeding. Its new tests and full backend suite await Docker verification.
+The renewal backend checkpoint passed its tests and full backend suite as reported by the developer. It was committed and pushed separately.
+
+### M6 — Membership dashboard checkpoint
+
+Authenticated active accounts can read only their own membership summary through `GET /api/membership`. The response includes the member number, current lifecycle status, activation and waiting dates, remaining calendar days, paid current-year period, eligibility explanation and renewal state. Personal identity numbers, private receipts and verification actors are not included. Summary reads do not generate invoices or write membership events.
+
+During January 1–30, eligible members can request their own annual invoice through `POST /api/membership/renewal-invoice`. Ownership, year, rate, cutoff and duplicate protection are enforced on the backend; the client supplies none of those financial values.
+
+The dashboard displays this summary with Malaysia date formatting, invoice links, a refresh action and an available-renewal action. It keeps loading, failed requests and absent membership records distinct. Existing verified M5 payments still require controlled activation; this checkpoint does not backfill them automatically.
+
+The renewal backend checkpoint passed checks and was committed/pushed as reported by the developer. The membership dashboard checkpoint's backend and frontend checks await execution in Docker.
 
 ### Next Milestones
 

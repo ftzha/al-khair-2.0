@@ -1,6 +1,7 @@
 
 <script setup lang="ts">
 import AppIcon from '@/components/AppIcon.vue'
+import MembershipSummary from '@/components/MembershipSummary.vue'
 import { RouterLink } from 'vue-router'
 import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
@@ -100,6 +101,7 @@ async function handleRefreshVerification() {
         <p v-if="verificationError" class="notice error" role="alert">{{ verificationError }}</p>
       </section>
     </div>
+    <MembershipSummary />
     <section class="card" aria-labelledby="actions-heading">
       <h2 id="actions-heading">Applications &amp; billing</h2>
       <div class="action-grid">

@@ -8,6 +8,7 @@ use App\Models\Membership;
 use App\Models\Payment;
 use App\Models\Person;
 use App\Models\Registration;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -17,7 +18,89 @@ class MembershipService
 {
     private const INITIAL_WAITING_DAYS = 90;
 
-    public function __construct(private readonly FeeRateService $money) {}
+    public function __construct(private readonly FeeRateService $money, private readonly EligibilityService $eligibility) {}
+
+    /** @return array<string, mixed>|null */
+    public function overview(User $user): ?array
+    {
+        return DB::transaction(fn () => $this->overviewSnapshot($user));
+    }
+
+    /** @return array<string, mixed>|null */
+    private function overviewSnapshot(User $user): ?array
+    {
+        $now = CarbonImmutable::now();
+        $local = $now->setTimezone('Asia/Kuala_Lumpur');
+        $membership = Membership::query()->whereHas('member', fn ($query) => $query->where('person_id', $user->person_id))
+            ->with('member')->first();
+        if ($membership === null) {
+            return null;
+        }
+        $eligibility = $this->eligibility->asOf($membership, $now);
+        $period = $membership->periods()->where('billing_year', $local->year)
+            ->where('effective_at', '<=', $now)
+            ->whereHas('invoice', fn ($query) => $query->where('status', 'PAID'))
+            ->whereHas('payment', fn ($query) => $query->where('status', 'VERIFIED')->where('verified_at', '<=', $now))
+            ->first();
+        $previousPaid = $membership->periods()->where('billing_year', $local->year - 1)
+            ->where('effective_at', '<=', $now)
+            ->whereHas('invoice', fn ($query) => $query->where('status', 'PAID'))
+            ->whereHas('payment', fn ($query) => $query->where('status', 'VERIFIED'))->exists();
+        $window = $local->month === 1 && $local->day <= 30;
+        $cutoff = CarbonImmutable::create($local->year, 1, 31, 0, 0, 0, 'Asia/Kuala_Lumpur');
+        $status = $membership->status;
+        if ($status !== 'CLOSED' && $period === null) {
+            $lastPaidYear = $membership->periods()->where('effective_at', '<=', $now)
+                ->whereHas('invoice', fn ($query) => $query->where('status', 'PAID'))
+                ->whereHas('payment', fn ($query) => $query->where('status', 'VERIFIED')->where('verified_at', '<=', $now))
+                ->max('billing_year');
+            if ($lastPaidYear !== null && $local->gte(CarbonImmutable::create((int) $lastPaidYear + 1, 1, 31, 0, 0, 0, 'Asia/Kuala_Lumpur'))) {
+                $status = 'LAPSED';
+            }
+        }
+        $invoice = $period?->invoice ?? Invoice::query()
+            ->where('person_id', $user->person_id)->where('member_id', $membership->member_id)
+            ->where('billing_year', $local->year)->where('type', 'RENEWAL')->first();
+        $payment = $invoice?->payments()->reorder()->orderByDesc('id')->first();
+        $canGenerate = $window && $status === 'ACTIVE' && $previousPaid && $period === null && $invoice === null;
+        $renewalState = match (true) {
+            $status === 'CLOSED' => 'CLOSED',
+            $period !== null => 'PAID',
+            $invoice?->status === 'CANCELLED' => 'CANCELLED',
+            $payment?->status === 'PENDING' && $payment->submitted_at->lt($cutoff) => 'PENDING_VERIFICATION',
+            ! $window && $local->gte($cutoff) => 'CUTOFF_PASSED',
+            ! $previousPaid || $status !== 'ACTIVE' => 'NOT_AVAILABLE',
+            $payment?->status === 'REJECTED' => 'PAYMENT_REJECTED',
+            $invoice !== null => 'PAYMENT_DUE',
+            $canGenerate => 'AVAILABLE',
+            default => 'NOT_OPEN',
+        };
+        if ($status === 'CLOSED' || ($status === 'LAPSED' && ! $eligibility['eligible'])) {
+            $eligibility['eligible'] = false;
+            $eligibility['reason'] = $status;
+        }
+        $waitingEnd = CarbonImmutable::parse($membership->waiting_until->toDateString(), 'Asia/Kuala_Lumpur');
+        $days = max(0, (int) $local->startOfDay()->diffInDays($waitingEnd, false));
+
+        return [
+            'id' => $membership->id, 'member_number' => $membership->member->member_number,
+            'status' => $status, 'activated_on' => $membership->activated_on->toDateString(),
+            'waiting_until' => $membership->waiting_until->toDateString(), 'waiting_days_remaining' => $days,
+            'eligibility' => $eligibility,
+            'current_period' => $period === null ? null : [
+                'billing_year' => $period->billing_year, 'starts_on' => $period->starts_on->toDateString(),
+                'ends_on' => $period->ends_on->toDateString(), 'effective_at' => $period->effective_at->toISOString(),
+            ],
+            'renewal' => [
+                'billing_year' => $local->year, 'cutoff_date' => $local->year.'-01-30',
+                'state' => $renewalState, 'can_generate_invoice' => $canGenerate,
+                'invoice' => $invoice === null ? null : [
+                    'id' => $invoice->id, 'invoice_number' => $invoice->invoice_number,
+                    'status' => $invoice->status, 'total' => $invoice->total,
+                ],
+            ],
+        ];
+    }
 
     public function assertRenewalPayable(Invoice $invoice, CarbonImmutable $submittedAt): void
     {

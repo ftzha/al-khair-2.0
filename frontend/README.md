@@ -77,3 +77,9 @@ docker compose exec frontend npm run build
 ```
 
 `npm run lint` applies fixes. Tests cover application editing and submission, verification, history, committee reviews, pagination, API response handling and role-based route access.
+
+## Membership Dashboard
+
+The dashboard reads the authenticated account's membership summary from `GET /api/membership`. It displays membership status and number, activation and initial waiting-period dates, current-year paid coverage, server-calculated eligibility, and renewal information. A failed request is shown separately from having no membership record.
+
+Eligible members can create an annual renewal invoice during January 1–30 and open its details. The server determines ownership, billing year, fee amount, deadlines and eligibility. The frontend prevents duplicate clicks and refreshes server state after an uncertain creation failure. It does not calculate eligibility locally or activate historical payments.
