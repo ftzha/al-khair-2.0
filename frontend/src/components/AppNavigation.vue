@@ -17,6 +17,7 @@ const links = computed(() => [
   { name: 'invoices', label: 'My Invoices', icon: 'invoice', prefix: '/invoices' },
   ...(hasCommitteeAccess(auth.user?.role) ? [
     { name: 'committee-applications', label: 'Review Applications', icon: 'review', prefix: '/committee/applications' },
+    { name: 'committee-memberships', label: 'Memberships', icon: 'members', prefix: '/committee/memberships' },
     { name: 'committee-payments', label: 'Verify Payments', icon: 'payment', prefix: '/committee/payments' },
   ] : []),
 ])

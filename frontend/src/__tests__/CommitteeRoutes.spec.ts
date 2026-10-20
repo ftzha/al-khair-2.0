@@ -23,14 +23,14 @@ function signIn(role: UserRole) {
 }
 
 describe('committee route protection', () => {
-  it.each(['/committee/applications', '/committee/applications/7', '/committee/payments', '/committee/payments/7', '/committee/payments/cash'])('redirects guests from %s to login', async (path) => {
+  it.each(['/committee/applications', '/committee/applications/7', '/committee/payments', '/committee/payments/7', '/committee/payments/cash', '/committee/memberships', '/committee/memberships/7'])('redirects guests from %s to login', async (path) => {
     await router.push(path)
     expect(router.currentRoute.value.name).toBe('login')
     expect(router.currentRoute.value.query.redirect).toBe(path)
     expect(auth.restoreSession).toHaveBeenCalled()
   })
 
-  it.each(['/committee/applications', '/committee/applications/7', '/committee/payments', '/committee/payments/7', '/committee/payments/cash'])('prevents member access to %s', async (path) => {
+  it.each(['/committee/applications', '/committee/applications/7', '/committee/payments', '/committee/payments/7', '/committee/payments/cash', '/committee/memberships', '/committee/memberships/7'])('prevents member access to %s', async (path) => {
     signIn('MEMBER')
     await router.push(path)
     expect(router.currentRoute.value.name).toBe('dashboard')
@@ -46,6 +46,10 @@ describe('committee route protection', () => {
     expect(router.currentRoute.value.name).toBe('committee-payments')
     await router.push('/committee/payments/7')
     expect(router.currentRoute.value.name).toBe('committee-payment-detail')
+    await router.push('/committee/memberships')
+    expect(router.currentRoute.value.name).toBe('committee-memberships')
+    await router.push('/committee/memberships/7')
+    expect(router.currentRoute.value.name).toBe('committee-membership-detail')
     await router.push('/committee/payments/cash')
     expect(router.currentRoute.value.name).toBe('committee-cash-payment')
   })

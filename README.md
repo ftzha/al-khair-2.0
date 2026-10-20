@@ -138,6 +138,25 @@ The dashboard displays this summary with Malaysia date formatting, invoice links
 
 The renewal backend checkpoint passed checks and was committed/pushed as reported by the developer. The membership dashboard checkpoint's backend and frontend checks await execution in Docker.
 
+### M6 — Committee membership and closure checkpoint
+
+COMMITTEE and ADMIN users can search a paginated membership list and open details with current eligibility, paid periods and an event timeline. The list and details calculate overdue status consistently even before scheduled status synchronization. Responses omit identity numbers and private receipt paths.
+
+Only active ADMIN accounts can close membership. A trimmed, non-empty reason of at most 2,000 characters is required. Closure is immediate, terminal in v1.0, rejects duplicate attempts, and records an append-only CLOSED event with reason, actor, and server timestamp. Times are stored in UTC and displayed in Asia/Kuala_Lumpur. Membership becomes ineligible from the closure instant; historical eligibility before closure is preserved.
+
+Closure is blocked while any payment for that person is PENDING. Payment submissions and closure coordinate on the membership row; closed memberships reject new payments. Invoices, payments, paid periods and past events remain intact. Closing membership does not disable login. Renewal, activation retries, backfill and status synchronization cannot reopen a closed membership.
+
+#### Final M6 acceptance checks
+
+- Run Pint, the complete backend suite, frontend unit tests, type checking, lint and production build. Automated cases cover waiting-period and year boundaries, timely renewal payments verified late, duplicate protection, closure authorization, pending-payment guards, transaction rollback and eligibility before/after closure.
+- As COMMITTEE, search Memberships and inspect paid periods/history; verify closure is read-only.
+- As ADMIN, close a disposable testing membership with a reason and confirm its CLOSED event and timestamp. Verify no second closure action is available.
+- As the closed member, sign in, check CLOSED/ineligible status and confirm historical invoices/payments remain visible.
+- Confirm MEMBER accounts cannot access committee membership URLs.
+- Check scheduler registration using `docker compose exec app php artisan schedule:list`. The runner is a separate operational process; timetable registration alone does not start it.
+
+This checkpoint needs no migration. Docker checks and manual closure acceptance remain pending; PHP syntax checks passed. No production MySQL concurrency test has been run in this session.
+
 ### Next Milestones
 
 - M5: Fees, invoices and payments.

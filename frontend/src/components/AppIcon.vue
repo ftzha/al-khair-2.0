@@ -3,6 +3,7 @@ defineProps<{ name: string }>()
 const paths: Record<string, string[]> = {
   'check-circle': ['M22 11.1V12a10 10 0 1 1-5.9-9.1', 'm22 4-10 10-3-3'],
   warning: ['m12 3 10 18H2Z', 'M12 9v4m0 4h.01'],
+  members: ['M12 3a4 4 0 1 0 0 8 4 4 0 0 0 0-8', 'M4 21v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2'],
   home: ['m3 10 9-7 9 7', 'M5 9v11h5v-6h4v6h5V9'],
   application: ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z', 'M14 2v6h6', 'M8 13h8M8 17h5'],
   invoice: ['M5 3h14v18l-3-2-4 2-4-2-3 2Z', 'M8 7h8M8 11h8M8 15h4'],

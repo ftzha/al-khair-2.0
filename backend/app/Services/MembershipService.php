@@ -29,13 +29,19 @@ class MembershipService
     /** @return array<string, mixed>|null */
     private function overviewSnapshot(User $user): ?array
     {
-        $now = CarbonImmutable::now();
-        $local = $now->setTimezone('Asia/Kuala_Lumpur');
         $membership = Membership::query()->whereHas('member', fn ($query) => $query->where('person_id', $user->person_id))
             ->with('member')->first();
         if ($membership === null) {
             return null;
         }
+        return $this->membershipSnapshot($membership);
+    }
+
+    /** @return array<string, mixed> */
+    private function membershipSnapshot(Membership $membership): array
+    {
+        $now = CarbonImmutable::now();
+        $local = $now->setTimezone('Asia/Kuala_Lumpur');
         $eligibility = $this->eligibility->asOf($membership, $now);
         $period = $membership->periods()->where('billing_year', $local->year)
             ->where('effective_at', '<=', $now)
@@ -59,7 +65,7 @@ class MembershipService
             }
         }
         $invoice = $period?->invoice ?? Invoice::query()
-            ->where('person_id', $user->person_id)->where('member_id', $membership->member_id)
+            ->where('person_id', $membership->member->person_id)->where('member_id', $membership->member_id)
             ->where('billing_year', $local->year)->where('type', 'RENEWAL')->first();
         $payment = $invoice?->payments()->reorder()->orderByDesc('id')->first();
         $canGenerate = $window && $status === 'ACTIVE' && $previousPaid && $period === null && $invoice === null;
@@ -100,6 +106,111 @@ class MembershipService
                 ],
             ],
         ];
+    }
+
+    public function authorizeCommittee(User $actor): void
+    {
+        abort_unless($actor->status === 'ACTIVE' && in_array($actor->role, ['COMMITTEE', 'ADMIN'], true), 403);
+    }
+
+    public function committeeIndex(User $actor, string $search): \Illuminate\Contracts\Pagination\LengthAwarePaginator
+    {
+        $this->authorizeCommittee($actor);
+        $now = CarbonImmutable::now('Asia/Kuala_Lumpur');
+        return Membership::query()->with('member.person:id,full_name')
+            ->withMax(['periods as last_paid_year' => fn ($query) => $query->where('effective_at', '<=', $now->utc())
+                ->whereHas('invoice', fn ($invoice) => $invoice->where('status', 'PAID'))
+                ->whereHas('payment', fn ($payment) => $payment->where('status', 'VERIFIED'))], 'billing_year')
+            ->when($search !== '', fn ($query) => $query->whereHas('member', fn ($member) => $member
+                ->where('member_number', 'like', '%'.$search.'%')
+                ->orWhereHas('person', fn ($person) => $person->where('full_name', 'like', '%'.$search.'%'))))
+            ->orderByDesc('id')->paginate(15)->through(fn (Membership $membership) => [
+                'id' => $membership->id, 'member_number' => $membership->member->member_number,
+                'full_name' => $membership->member->person->full_name,
+                'status' => $this->displayStatus($membership, $now, $membership->last_paid_year === null ? null : (int) $membership->last_paid_year),
+                'activated_on' => $membership->activated_on->toDateString(),
+            ]);
+    }
+
+    private function displayStatus(Membership $membership, CarbonImmutable $instant, ?int $lastPaidYear): string
+    {
+        if ($membership->status !== 'CLOSED' && $lastPaidYear !== null
+            && $instant->gte(CarbonImmutable::create($lastPaidYear + 1, 1, 31, 0, 0, 0, 'Asia/Kuala_Lumpur'))) {
+            return 'LAPSED';
+        }
+
+        return $membership->status;
+    }
+
+    public function committeeDetail(User $actor, Membership $membership): array
+    {
+        $this->authorizeCommittee($actor);
+        return DB::transaction(function () use ($actor, $membership) {
+            $membership = Membership::with('member.person.user')->findOrFail($membership->id);
+            $summary = $this->membershipSnapshot($membership);
+            $pending = Payment::where('status', 'PENDING')
+                ->whereHas('invoice', fn ($query) => $query->where('person_id', $membership->member->person_id))->count();
+
+            return [
+                ...$summary, 'full_name' => $membership->member->person->full_name,
+                'email' => $membership->member->person->user?->email,
+                'pending_payment_count' => $pending,
+                'can_close' => $actor->role === 'ADMIN' && $membership->status !== 'CLOSED' && $pending === 0,
+                'periods' => $membership->periods()->get()->map(fn ($period) => [
+                    'id' => $period->id, 'billing_year' => $period->billing_year,
+                    'starts_on' => $period->starts_on->toDateString(), 'ends_on' => $period->ends_on->toDateString(),
+                    'effective_at' => $period->effective_at->toISOString(), 'payment_id' => $period->payment_id,
+                ]),
+                'events' => $membership->events()->with('actor.person')->get()->map(fn ($event) => [
+                    'id' => $event->id, 'type' => $event->type,
+                    'effective_at' => $event->effective_at->toISOString(), 'recorded_at' => $event->recorded_at->toISOString(),
+                    'actor_name' => $event->actor?->person?->full_name ?? 'System',
+                    'reason' => $event->metadata['reason'] ?? null,
+                ]),
+            ];
+        });
+    }
+
+    /** Payment writers and closure serialize on the same membership row. */
+    public function assertOpenForPayment(Invoice $invoice): void
+    {
+        $member = Member::where('person_id', $invoice->person_id)->first();
+        if ($member === null) {
+            return;
+        }
+        $membership = Membership::where('member_id', $member->id)->lockForUpdate()->first();
+        if ($membership?->status === 'CLOSED') {
+            throw ValidationException::withMessages(['membership' => ['Closed memberships cannot accept new payments.']]);
+        }
+    }
+
+    public function close(Membership $membership, User $actor, string $reason): Membership
+    {
+        abort_unless($actor->status === 'ACTIVE' && $actor->role === 'ADMIN', 403);
+        $reason = trim($reason);
+        if ($reason === '' || mb_strlen($reason) > 2000) {
+            throw ValidationException::withMessages(['reason' => ['Enter a closure reason of up to 2,000 characters.']]);
+        }
+        return DB::transaction(function () use ($membership, $actor, $reason) {
+            $membership = Membership::query()->lockForUpdate()->findOrFail($membership->id);
+            if ($membership->status === 'CLOSED') {
+                throw ValidationException::withMessages(['membership' => ['This membership is already closed.']]);
+            }
+            $pending = Payment::where('status', 'PENDING')
+                ->whereHas('invoice', fn ($query) => $query->where('person_id', $membership->member->person_id))->exists();
+            if ($pending) {
+                throw ValidationException::withMessages(['payments' => ['Resolve all pending payments before closing this membership.']]);
+            }
+            $effective = CarbonImmutable::now('Asia/Kuala_Lumpur')->utc();
+            $membership->events()->create([
+                'event_key' => 'closed:'.$membership->id, 'type' => 'CLOSED',
+                'effective_at' => $effective, 'recorded_at' => $effective, 'actor_id' => $actor->id,
+                'metadata' => ['reason' => $reason],
+            ]);
+            $membership->update(['status' => 'CLOSED']);
+
+            return $membership;
+        });
     }
 
     public function assertRenewalPayable(Invoice $invoice, CarbonImmutable $submittedAt): void

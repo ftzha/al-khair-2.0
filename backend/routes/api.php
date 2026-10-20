@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\CommitteePaymentController;
 use App\Http\Controllers\Api\InvoiceController;
 use App\Http\Controllers\Api\MembershipController;
+use App\Http\Controllers\Api\CommitteeMembershipController;
 use App\Http\Controllers\Api\EmailVerificationController;
 use App\Http\Controllers\Api\RegistrationController;
 use App\Http\Controllers\Api\CommitteeRegistrationController;
@@ -102,4 +103,10 @@ Route::middleware(['auth:sanctum', 'account.active'])->group(function () {
 Route::middleware(['auth:sanctum', 'account.active'])->group(function () {
     Route::get('/membership', [MembershipController::class, 'show']);
     Route::post('/membership/renewal-invoice', [MembershipController::class, 'renewal'])->middleware('throttle:6,1');
+});
+
+Route::middleware(['auth:sanctum', 'account.active'])->prefix('committee/memberships')->group(function () {
+    Route::get('/', [CommitteeMembershipController::class, 'index']);
+    Route::get('/{membership}', [CommitteeMembershipController::class, 'show']);
+    Route::post('/{membership}/close', [CommitteeMembershipController::class, 'close'])->middleware('throttle:6,1');
 });

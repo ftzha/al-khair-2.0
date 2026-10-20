@@ -78,6 +78,16 @@ const router = createRouter({
       meta: { requiresAuth: true, requiresCommittee: true },
     },
     {
+      path: '/committee/memberships', name: 'committee-memberships',
+      component: () => import('@/views/CommitteeMembershipsView.vue'),
+      meta: { requiresAuth: true, requiresCommittee: true },
+    },
+    {
+      path: '/committee/memberships/:id', name: 'committee-membership-detail',
+      component: () => import('@/views/CommitteeMembershipDetailView.vue'),
+      meta: { requiresAuth: true, requiresCommittee: true },
+    },
+    {
       path: '/:pathMatch(.*)*',
       redirect: '/dashboard',
     },

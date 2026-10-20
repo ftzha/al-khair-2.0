@@ -83,3 +83,9 @@ docker compose exec frontend npm run build
 The dashboard reads the authenticated account's membership summary from `GET /api/membership`. It displays membership status and number, activation and initial waiting-period dates, current-year paid coverage, server-calculated eligibility, and renewal information. A failed request is shown separately from having no membership record.
 
 Eligible members can create an annual renewal invoice during January 1–30 and open its details. The server determines ownership, billing year, fee amount, deadlines and eligibility. The frontend prevents duplicate clicks and refreshes server state after an uncertain creation failure. It does not calculate eligibility locally or activate historical payments.
+
+## Committee Memberships
+
+COMMITTEE and ADMIN accounts can open Memberships from the shared navigation, search by name/member number, and inspect eligibility, paid periods and the membership timeline. The ADMIN-only closure form requires a reason and an explicit permanent-closure confirmation. Pending payments block the form; the backend rechecks authorization and pending payments on submission. A failed or uncertain closure request refreshes server state without automatically retrying the action.
+
+Closure preserves the member's login and financial/history records. Closed memberships cannot be reopened in v1.0. Member identity numbers and private receipt paths are not included in the membership API.

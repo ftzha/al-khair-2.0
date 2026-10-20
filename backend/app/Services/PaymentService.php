@@ -136,6 +136,7 @@ class PaymentService
             throw ValidationException::withMessages(['payment' => ['This invoice already has a pending or verified payment.']]);
         }
 
+        $this->memberships->assertOpenForPayment($invoice);
         $this->memberships->assertRenewalPayable($invoice, $submittedAt);
 
         return $invoice;
