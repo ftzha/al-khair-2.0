@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppIcon from '@/components/AppIcon.vue'
 import { computed, ref, watch } from 'vue'
 import { paymentsApi, paymentError } from '@/services/payments'
 import { formatRinggit, type InvoiceStatus } from '@/types/invoice'
@@ -104,7 +105,7 @@ async function download(id: number) {
 
 <template>
   <section class="payment-panel" aria-labelledby="payments-heading">
-    <header class="panel-header"><h2 id="payments-heading">Payments</h2><button type="button" :disabled="loading || submitting" @click="loadHistory">Refresh payments</button></header>
+    <header class="panel-header"><h2 id="payments-heading">Payments</h2><button type="button" :disabled="loading || submitting" @click="loadHistory"><AppIcon name="refresh" /> Refresh payments</button></header>
     <p v-if="loading" role="status">Loading payment history...</p>
     <p v-if="errorMessage" class="notice error" role="alert">{{ errorMessage }}</p>
     <ul v-if="Object.keys(fields).length" class="notice error" role="alert"><template v-for="(messages, field) in fields" :key="field"><li v-for="message in messages" :key="message">{{ message }}</li></template></ul>
@@ -117,7 +118,7 @@ async function download(id: number) {
         <p v-if="payment.reference">Reference: {{ payment.reference }}</p>
         <p v-if="payment.reviewed_at">Reviewed: {{ formatMalaysiaDateTime(payment.reviewed_at) }}</p>
         <p v-if="payment.rejection_reason" class="notice warning">{{ payment.rejection_reason }}</p>
-        <button v-if="payment.has_receipt" type="button" :disabled="downloadedId !== null" @click="download(payment.id)">{{ downloadedId === payment.id ? 'Downloading...' : 'Download receipt' }}</button>
+        <button v-if="payment.has_receipt" type="button" :disabled="downloadedId !== null" @click="download(payment.id)"><AppIcon name="download" /> {{ downloadedId === payment.id ? 'Downloading...' : 'Download receipt' }}</button>
       </article>
       <p v-if="records.some((p) => p.status === 'PENDING')" class="notice warning">A payment is awaiting verification. Another payment cannot be submitted for this invoice while review is pending.</p>
       <form v-if="canSubmit" @submit.prevent="prepareTransfer">

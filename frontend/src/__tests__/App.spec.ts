@@ -5,7 +5,7 @@ import App from '../App.vue'
 describe('App', () => {
   it('renders the active route through the router outlet', () => {
     const wrapper = mount(App, {
-      global: { stubs: { RouterView: { template: '<main>Active route</main>' } } },
+      global: { stubs: { AppNavigation: true, RouterView: { template: '<main>Active route</main>' } } },
     })
     expect(wrapper.text()).toContain('Active route')
   })

@@ -28,7 +28,6 @@ watch(status, () => loadQueue(), { immediate: true })
 </script>
 <template>
   <main>
-    <RouterLink class="back-link" to="/dashboard">Back to dashboard</RouterLink>
     <header><div><p class="eyebrow">al Khair · Committee</p><h1>Payment Verification</h1><p class="muted">Check receipts and confirm payments independently.</p></div><RouterLink class="button-link" :to="{ name: 'committee-cash-payment' }">Record cash payment</RouterLink></header>
     <label for="payment-status">Payment status</label><select id="payment-status" v-model="status"><option value="PENDING">Pending verification</option><option value="VERIFIED">Verified</option><option value="REJECTED">Rejected</option></select>
     <button type="button" :disabled="loading" @click="loadQueue(results?.current_page ?? 1)">Refresh payments</button>
@@ -48,7 +47,6 @@ watch(status, () => loadQueue(), { immediate: true })
 <style scoped>
 main { max-width: 60rem; margin: 2rem auto; padding: 0 1rem 2rem; color: #1c3029; }
 a { color: #185940; }
-.back-link { display: inline-block; margin-bottom: 1.5rem; }
 header, .row, nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
 h1 { margin: 0.3rem 0 0.5rem; } h2 { font-size: 1.2rem; } p, small { line-height: 1.6; }
 .eyebrow { margin: 0; font-size: 0.85rem; color: #185940; font-weight: 600; }

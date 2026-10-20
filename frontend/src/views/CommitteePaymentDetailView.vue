@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppIcon from '@/components/AppIcon.vue'
 import { ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import { paymentsApi, paymentError } from '@/services/payments'
@@ -84,7 +85,7 @@ async function download() {
 </script>
 <template>
   <main>
-    <RouterLink class="back-link" :to="{ name: 'committee-payments' }">Back to payment queue</RouterLink>
+    <RouterLink class="back-link" :to="{ name: 'committee-payments' }"><AppIcon name="back" /> Payment queue</RouterLink>
     <header><div><p class="eyebrow">al Khair · Committee</p><h1>Review Payment</h1></div><button type="button" :disabled="loading || reviewing" @click="loadPayment">Reload payment</button></header>
     <p v-if="loading" role="status">Loading payment...</p><p v-if="errorMessage" class="notice error" role="alert">{{ errorMessage }}</p><p v-if="successMessage" class="notice success" role="status">{{ successMessage }}</p>
     <ul v-if="Object.keys(fields).length" class="notice error" role="alert"><template v-for="(messages, field) in fields" :key="field"><li v-for="message in messages" :key="message">{{ message }}</li></template></ul>
@@ -104,7 +105,6 @@ async function download() {
 <style scoped>
 main { max-width: 60rem; margin: 2rem auto; padding: 0 1rem 2rem; color: #1c3029; }
 a { color: #185940; }
-.back-link { display: inline-block; margin-bottom: 1.5rem; }
 header, .row, nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
 h1 { margin: 0.3rem 0 0.5rem; } h2 { font-size: 1.2rem; } p, small { line-height: 1.6; }
 .eyebrow { margin: 0; font-size: 0.85rem; color: #185940; font-weight: 600; }

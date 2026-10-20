@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppIcon from '@/components/AppIcon.vue'
 import { formatMalaysiaDate, formatMalaysiaDateTime } from '@/services/dateFormatting'
 import { computed, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -8,6 +9,13 @@ import { canEditRegistration, registrationStatusLabels, reviewDecisionLabels, ty
 
 const route = useRoute()
 const auth = useAuthStore()
+// Accept only an invoice ID, never an arbitrary redirect URL.
+const sourceInvoiceId = computed(() => {
+  const value = route.query?.invoice
+  if (typeof value !== 'string' || !/^[1-9]\d*$/.test(value)) return null
+  const id = Number(value)
+  return Number.isSafeInteger(id) ? id : null
+})
 const application = ref<RegistrationDetail | null>(null)
 const loading = ref(true)
 const saving = ref(false)
@@ -174,7 +182,8 @@ watch(() => route.params.id, loadApplication, { immediate: true })
 
 <template>
   <main>
-    <RouterLink :to="{ name: 'applications' }">Back to my applications</RouterLink>
+    <RouterLink class="back-link" v-if="sourceInvoiceId" :to="{ name: 'invoice-detail', params: { id: sourceInvoiceId } }"><AppIcon name="back" /> Back to invoice</RouterLink>
+    <RouterLink class="back-link" v-else :to="{ name: 'applications' }"><AppIcon name="back" /> My Applications</RouterLink>
     <h1>Membership Application</h1>
     <p class="intro">Check your identity information and provide your current contact details before submitting for review.</p>
     <p v-if="loading" role="status">Loading application...</p>
@@ -185,7 +194,7 @@ watch(() => route.params.id, loadApplication, { immediate: true })
       </template>
     </ul>
     <p v-if="savedMessage" role="status">{{ savedMessage }}</p>
-    <button v-if="!loading" type="button" :disabled="busy" @click="loadApplication">Reload application</button>
+    <button v-if="!loading" type="button" :disabled="busy" @click="loadApplication"><AppIcon name="refresh" /> Reload application</button>
     <template v-if="application && !loading">
       <p>Application #{{ application.id }} — {{ registrationStatusLabels[application.status] }}</p>
       <section aria-labelledby="identity-heading">

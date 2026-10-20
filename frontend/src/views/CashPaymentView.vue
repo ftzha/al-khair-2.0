@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppIcon from '@/components/AppIcon.vue'
 import { onMounted, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import { paymentsApi, paymentError } from '@/services/payments'
@@ -60,7 +61,7 @@ onMounted(() => loadInvoices())
 </script>
 <template>
   <main>
-    <RouterLink class="back-link" :to="{ name: 'committee-payments' }">Back to payment queue</RouterLink><p class="eyebrow">al Khair · Committee</p><h1>Record Cash Payment</h1><p class="muted">Choose an unpaid invoice and record the full cash amount received. Another authorized user must verify it.</p>
+    <RouterLink class="back-link" :to="{ name: 'committee-payments' }"><AppIcon name="back" /> Payment queue</RouterLink><p class="eyebrow">al Khair · Committee</p><h1>Record Cash Payment</h1><p class="muted">Choose an unpaid invoice and record the full cash amount received. Another authorized user must verify it.</p>
     <div v-if="successId" class="notice success" role="status">Cash payment recorded and awaiting independent verification. <RouterLink :to="{ name: 'committee-payment-detail', params: { id: successId } }">View payment</RouterLink></div>
     <p v-if="errorMessage" class="notice error" role="alert">{{ errorMessage }}</p><ul v-if="Object.keys(fields).length" class="notice error" role="alert"><template v-for="(messages, field) in fields" :key="field"><li v-for="message in messages" :key="message">{{ message }}</li></template></ul>
     <form class="card" @submit.prevent="loadInvoices()"><label for="invoice-search">Find invoice</label><input id="invoice-search" v-model="search" maxlength="100" placeholder="Enter all or part of the invoice number" :disabled="recording" /><button type="submit" :disabled="loading || recording">Search invoices</button></form>
@@ -76,7 +77,6 @@ onMounted(() => loadInvoices())
 <style scoped>
 main { max-width: 60rem; margin: 2rem auto; padding: 0 1rem 2rem; color: #1c3029; }
 a { color: #185940; }
-.back-link { display: inline-block; margin-bottom: 1.5rem; }
 header, .row, nav { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
 h1 { margin: 0.3rem 0 0.5rem; } h2 { font-size: 1.2rem; } p, small { line-height: 1.6; }
 .eyebrow { margin: 0; font-size: 0.85rem; color: #185940; font-weight: 600; }

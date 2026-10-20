@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppIcon from '@/components/AppIcon.vue'
 import { ref, watch } from 'vue'
 import InvoicePayments from '@/views/InvoicePayments.vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -47,10 +48,10 @@ watch(() => route.params.id, loadInvoice, { immediate: true })
 
 <template>
   <main>
-    <RouterLink class="back-link" :to="{ name: 'invoices' }">Back to my invoices</RouterLink>
+    <RouterLink class="back-link" :to="{ name: 'invoices' }"><AppIcon name="back" /> My Invoices</RouterLink>
     <header class="page-header">
       <div><p class="eyebrow">al Khair · Billing</p><h1>Invoice Details</h1></div>
-      <button type="button" :disabled="loading" @click="loadInvoice">Reload invoice</button>
+      <button type="button" :disabled="loading" @click="loadInvoice"><AppIcon name="refresh" /> Reload invoice</button>
     </header>
     <p v-if="loading" class="notice" role="status">Loading invoice...</p>
     <p v-if="errorMessage" class="notice error" role="alert">{{ errorMessage }}</p>
@@ -66,7 +67,7 @@ watch(() => route.params.id, loadInvoice, { immediate: true })
           <div><dt>Issued</dt><dd>{{ formatMalaysiaDateTime(invoice.issued_at) }}</dd></div>
           <div><dt>Payment due</dt><dd>{{ formatMalaysiaDate(invoice.due_date) }}</dd></div>
         </dl>
-        <RouterLink v-if="invoice.registration_id" :to="{ name: 'application-detail', params: { id: invoice.registration_id } }">View related application</RouterLink>
+        <RouterLink v-if="invoice.registration_id" :to="{ name: 'application-detail', params: { id: invoice.registration_id }, query: { invoice: invoice.id } }"><AppIcon name="link" /> View related application</RouterLink>
       </section>
       <section class="card" aria-labelledby="items-heading">
         <h2 id="items-heading">Fee breakdown</h2>
@@ -93,7 +94,6 @@ watch(() => route.params.id, loadInvoice, { immediate: true })
 <style scoped>
 main { max-width: 60rem; margin: 2rem auto; padding: 0 1rem 2rem; color: #1c3029; }
 a { color: #185940; }
-.back-link { display: inline-block; margin-bottom: 1.5rem; }
 .page-header, .invoice-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
 h1 { margin: 0.3rem 0 0.5rem; }
 h2 { font-size: 1.2rem; margin-top: 0; overflow-wrap: anywhere; }

@@ -47,7 +47,6 @@ onMounted(loadApplications)
 
 <template>
   <main class="applications-page">
-    <RouterLink class="back-link" to="/dashboard">Back to dashboard</RouterLink>
     <header class="page-header">
       <div>
         <p class="eyebrow">al Khair · Membership</p>
@@ -98,7 +97,6 @@ onMounted(loadApplications)
 
 <style scoped>
 .applications-page { max-width: 60rem; margin: 2rem auto; padding: 0 1rem 2rem; color: #1c3029; }
-.back-link { display: inline-block; margin-bottom: 1.5rem; color: #185940; }
 .page-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
 h1 { margin: 0.3rem 0 0.5rem; }
 h2 { margin: 0 0 0.6rem; font-size: 1.15rem; }

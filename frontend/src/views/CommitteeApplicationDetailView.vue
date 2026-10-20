@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AppIcon from '@/components/AppIcon.vue'
 import { formatMalaysiaDate, formatMalaysiaDateTime } from '@/services/dateFormatting'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
@@ -163,7 +164,7 @@ watch(() => route.params.id, loadApplication, { immediate: true })
 
 <template>
   <main>
-    <RouterLink class="back-link" :to="{ name: 'committee-applications' }">Back to review queue</RouterLink>
+    <RouterLink class="back-link" :to="{ name: 'committee-applications' }"><AppIcon name="back" /> Review queue</RouterLink>
     <p class="eyebrow">al Khair · Committee</p>
     <h1>Review Application</h1>
     <p class="intro">Check the latest submitted details and earlier feedback before recording your decision.</p>
@@ -175,7 +176,7 @@ watch(() => route.params.id, loadApplication, { immediate: true })
       </template>
     </ul>
     <p v-if="successMessage" class="notice success" role="status">{{ successMessage }}</p>
-    <button v-if="!loading" type="button" :disabled="reviewing" @click="loadApplication">Reload application</button>
+    <button v-if="!loading" type="button" :disabled="reviewing" @click="loadApplication"><AppIcon name="refresh" /> Reload application</button>
     <template v-if="application && !loading">
       <h2>Application #{{ application.id }} — {{ application.applicant_name }}</h2>
       <p class="status-row">Status: <span class="badge" :class="application.status.toLowerCase()">{{ registrationStatusLabels[application.status] }}</span></p>
@@ -240,7 +241,6 @@ watch(() => route.params.id, loadApplication, { immediate: true })
 
 <style scoped>
 main { max-width: 60rem; margin: 2rem auto; padding: 0 1rem 2rem; color: #1c3029; }
-.back-link { display: inline-block; margin-bottom: 1.5rem; color: #185940; }
 .eyebrow { margin: 0; color: #185940; font-size: 0.85rem; font-weight: 600; }
 h1 { margin: 0.3rem 0 0.5rem; }
 h2 { font-size: 1.2rem; overflow-wrap: anywhere; }

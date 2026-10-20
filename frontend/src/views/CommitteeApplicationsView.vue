@@ -39,7 +39,6 @@ onMounted(() => loadQueue())
 
 <template>
   <main>
-    <RouterLink class="back-link" to="/dashboard">Back to dashboard</RouterLink>
     <header class="page-header">
       <div>
         <p class="eyebrow">al Khair · Committee</p>
@@ -83,7 +82,6 @@ onMounted(() => loadQueue())
 
 <style scoped>
 main { max-width: 60rem; margin: 2rem auto; padding: 0 1rem 2rem; color: #1c3029; }
-.back-link { display: inline-block; margin-bottom: 1.5rem; color: #185940; }
 .page-header, .application-header { display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
 .page-header { margin-bottom: 1.5rem; }
 h1 { margin: 0.3rem 0 0.5rem; }

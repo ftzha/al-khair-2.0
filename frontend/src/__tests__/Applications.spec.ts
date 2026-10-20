@@ -6,7 +6,7 @@ import ApplicationDetailView from '@/views/ApplicationDetailView.vue'
 import { registrationsApi } from '@/services/registrations'
 import { canEditRegistration } from '@/types/registration'
 
-const { push, route } = vi.hoisted(() => ({ push: vi.fn<Router['push']>(), route: { params: { id: '7' } } }))
+const { push, route } = vi.hoisted(() => ({ push: vi.fn<Router['push']>(), route: { params: { id: '7' }, query: { invoice: '' } } }))
 vi.mock('vue-router', () => ({
   useRouter: () => ({ push }),
   useRoute: () => route,
@@ -27,9 +27,25 @@ function detail(status: 'DRAFT' | 'PENDING_REVIEW' | 'CHANGES_REQUESTED' = 'DRAF
   }
 }
 
-beforeEach(() => { vi.resetAllMocks() })
+beforeEach(() => { vi.resetAllMocks(); route.query.invoice = '' })
 
 describe('member applications', () => {
+  it('offers a return to the source invoice after opening its related application', async () => {
+    route.query.invoice = '12'
+    vi.mocked(registrationsApi.detail).mockResolvedValue(detail())
+    const wrapper = mount(ApplicationDetailView)
+    await flushPromises()
+    expect(wrapper.text()).toContain('Back to invoice')
+  })
+
+  it('ignores invalid invoice return destinations', async () => {
+    route.query.invoice = 'https://example.com'
+    vi.mocked(registrationsApi.detail).mockResolvedValue(detail())
+    const wrapper = mount(ApplicationDetailView)
+    await flushPromises()
+    expect(wrapper.text()).not.toContain('Back to invoice')
+  })
+
   it('creates and opens a draft from the empty-state plus button', async () => {
     vi.mocked(registrationsApi.list).mockResolvedValue([])
     vi.mocked(registrationsApi.create).mockResolvedValue({ id: 7, status: 'DRAFT', draft_data: null })

@@ -1,34 +1,14 @@
 
 <script setup lang="ts">
+import AppIcon from '@/components/AppIcon.vue'
 import { RouterLink } from 'vue-router'
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { AxiosError } from 'axios'
 import { hasCommitteeAccess } from '@/types/auth'
 
 const auth = useAuthStore()
-const router = useRouter()
-
-// Display an error if the logout request fails.
-// The store still clears the local session in that case.
-const logoutError = ref('')
-
-async function handleLogout() {
-    logoutError.value = ''
-
-    try {
-        await auth.logout()
-    } catch {
-        // Network errors can prevent server-side token revocation.
-        logoutError.value =
-        'Could not confirm server logout. Your local session was cleared.'
-    } finally {
-        await router.replace('/login')
-    }
-}
-
-// Track verification actions separately from logout.
+// Track email verification requests independently.
 const isSendingVerification = ref(false)
 const isRefreshingUser = ref(false)
 const verificationMessage = ref('')
@@ -87,21 +67,26 @@ async function handleRefreshVerification() {
         <h1>Dashboard</h1>
         <p class="muted">Welcome, {{ auth.user?.full_name }}!</p>
       </div>
-      <button type="button" class="secondary" @click="handleLogout">Logout</button>
     </header>
-    <p v-if="logoutError" class="notice error" role="alert">{{ logoutError }}</p>
-    <div class="dashboard-grid">
+    <div class="dashboard-grid" :class="{ 'account-only': auth.user?.email_verified }">
       <section class="card" aria-labelledby="account-heading">
         <h2 id="account-heading">Your account</h2>
         <dl>
           <dt>Name</dt><dd>{{ auth.user?.full_name }}</dd>
-          <dt>Email</dt><dd>{{ auth.user?.email }}</dd>
+          <dt>Email</dt>
+          <dd class="email-row">
+            <span>{{ auth.user?.email }}</span>
+            <span class="email-status" :class="auth.user?.email_verified ? 'is-verified' : 'is-unverified'"
+              :title="auth.user?.email_verified ? 'Email verified' : 'Email not verified'">
+              <AppIcon :name="auth.user?.email_verified ? 'check-circle' : 'warning'" />
+              <span class="sr-only">{{ auth.user?.email_verified ? 'Email verified' : 'Email not verified' }}</span>
+            </span>
+          </dd>
           <dt>Role</dt><dd><span class="badge">{{ auth.user?.role }}</span></dd>
         </dl>
       </section>
-      <section class="card" :class="auth.user?.email_verified ? 'verified' : 'pending'" aria-labelledby="verification-heading">
+      <section v-if="!auth.user?.email_verified" class="card pending" aria-labelledby="verification-heading">
         <h2 id="verification-heading">Email Verification</h2>
-        <template v-if="!auth.user?.email_verified">
           <p>Your email address is not verified yet. Please verify it before submitting a membership application.</p>
           <div class="actions">
             <button type="button" :disabled="isSendingVerification" @click="handleResendVerification">
@@ -111,12 +96,6 @@ async function handleRefreshVerification() {
               {{ isRefreshingUser ? 'Checking...' : 'Refresh Verification Status' }}
             </button>
           </div>
-        </template>
-        <template v-else>
-          <span class="badge">Verified</span>
-          <p>Your email address is verified.</p>
-          <p class="muted">You can submit your membership application for review.</p>
-        </template>
         <p v-if="verificationMessage" class="notice" role="status">{{ verificationMessage }}</p>
         <p v-if="verificationError" class="notice error" role="alert">{{ verificationError }}</p>
       </section>
@@ -125,19 +104,19 @@ async function handleRefreshVerification() {
       <h2 id="actions-heading">Applications &amp; billing</h2>
       <div class="action-grid">
         <RouterLink class="action-card" to="/applications">
-          <strong>My Applications <span aria-hidden="true">→</span></strong>
+          <strong><span><AppIcon name="application" /> My Applications</span> <span aria-hidden="true">→</span></strong>
           <span>Create a draft, update your contact details and follow your application status.</span>
         </RouterLink>
         <RouterLink class="action-card" to="/invoices">
-          <strong>My Invoices <span aria-hidden="true">→</span></strong>
+          <strong><span><AppIcon name="invoice" /> My Invoices</span> <span aria-hidden="true">→</span></strong>
           <span>View your fee breakdown, invoice status and payment due dates.</span>
         </RouterLink>
         <RouterLink v-if="hasCommitteeAccess(auth.user?.role)" class="action-card" to="/committee/applications">
-          <strong>Review Applications <span aria-hidden="true">→</span></strong>
+          <strong><span><AppIcon name="review" /> Review Applications</span> <span aria-hidden="true">→</span></strong>
           <span>Review submitted applications and record committee decisions.</span>
         </RouterLink>
         <RouterLink v-if="hasCommitteeAccess(auth.user?.role)" class="action-card" to="/committee/payments">
-          <strong>Verify Payments <span aria-hidden="true">→</span></strong>
+          <strong><span><AppIcon name="payment" /> Verify Payments</span> <span aria-hidden="true">→</span></strong>
           <span>Review transfer receipts, record cash payments and verify independently.</span>
         </RouterLink>
       </div>
@@ -158,7 +137,13 @@ p { line-height: 1.6; }
 .action-grid { display: flex; flex-wrap: wrap; gap: 1rem; }
 .action-grid > .action-card { flex: 1 1 18rem; min-width: 0; }
 .card { margin-bottom: 1rem; padding: clamp(1rem, 3vw, 1.5rem); background: #fff; border: 1px solid #d8e3de; border-radius: 12px; }
-.verified { background: #f3faf5; }
+.dashboard-grid.account-only { grid-template-columns: minmax(0, 1fr); }
+.email-row { display: flex; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+.email-row > span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.email-status { display: inline-flex; align-items: center; justify-content: center; padding: 0.2rem; border-radius: 50%; }
+.is-verified { color: #185940; background: #e6f5ec; }
+.is-unverified { color: #78520b; background: #fff4d8; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 .pending { background: #fffbf0; border-color: #e8c77c; }
 dl { margin-bottom: 0; }
 dt { margin-top: 0.85rem; color: #4c6055; font-size: 0.9rem; }
