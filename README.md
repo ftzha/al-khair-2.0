@@ -107,7 +107,26 @@ The activation date is the verified payment timestamp's date in Asia/Kuala_Lumpu
 
 An initial invoice retains its original billing year when verification crosses New Year. Its period remains January 1–December 31 of that billing year, and activation still starts on the verification date. A separate annual-only renewal is required for the new year; the initial invoice is not reassigned. Renewal generation, January grace-period enforcement and membership UI are the next M6 batch.
 
-These changes do not automatically backfill previously verified M5 payments. No existing invoices or fee configurations are rewritten. The new backend tests await execution in Docker; PHP syntax checks passed.
+These changes do not automatically backfill previously verified M5 payments. No existing invoices or fee configurations are rewritten. The activation backend tests and migrations passed as reported by the developer.
+
+### M6 — Renewal backend checkpoint
+
+The activation checkpoint passed backend checks and migrations, as reported by the developer. The renewal checkpoint adds annual-only invoices using the rate effective on issuance, one invoice per member and billing year, and one paid period per membership/year. Initial invoice due dates and billing years remain unchanged. Renewals are issued during January 1–30 for active memberships with the previous year paid; gap-year arrears/reactivation remains outside v1.0.
+
+Renewal bank transfers must be submitted, and cash must be recorded, before January 31 at 00:00 Asia/Kuala_Lumpur time. The server records this timestamp; no user-supplied payment date is accepted. Timely pending payments can be verified later. A rejected payment cannot be replaced after the cutoff. Verified renewals take effect prospectively from verification and preserve the original initial waiting-period boundary.
+
+Unpaid members are ineligible during January's grace period. Status synchronization records LAPSED from the January 31 boundary (never before activation or the preceding paid period became effective). Valid delayed verification records RENEWED and restores status prospectively; it also records a missing lapse if the scheduler did not run. Historical events are retained. A past-year payment never pays the current year.
+
+Operator commands:
+
+```bash
+docker compose exec app php artisan memberships:generate-renewals
+docker compose exec app php artisan memberships:sync-statuses
+```
+
+The renewal command uses the current Malaysia calendar year and does nothing outside January 1–30. Both commands tolerate retries and are scheduled hourly with overlap protection. The Laravel scheduler runner must be started separately (for example, `docker compose exec app php artisan schedule:work` during development); adding schedule entries does not start a background process. Renewals for a membership first activated in January can be generated on the next run or by running the renewal command directly before the cutoff.
+
+This checkpoint changes backend logic only and needs no migration or seeding. Its new tests and full backend suite await Docker verification.
 
 ### Next Milestones
 

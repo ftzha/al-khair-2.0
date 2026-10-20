@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Invoice;
 use App\Models\Payment;
 use App\Models\User;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -33,7 +34,8 @@ class PaymentService
         $storedPath = null;
         try {
             return DB::transaction(function () use ($invoice, $actor, $amount, $reference, $receipt, &$storedPath) {
-                $invoice = $this->lockPayableInvoice($invoice, $amount);
+                $submittedAt = CarbonImmutable::now();
+            $invoice = $this->lockPayableInvoice($invoice, $amount, $submittedAt);
                 $invoiceNumber = preg_replace('/[^A-Za-z0-9_-]/', '-', $invoice->invoice_number);
                 $timestamp = now()->setTimezone('Asia/Kuala_Lumpur')->format('Ymd_His');
                 $extensions = ['application/pdf' => 'pdf', 'image/jpeg' => 'jpg', 'image/png' => 'png'];
@@ -46,7 +48,7 @@ class PaymentService
                 return $invoice->payments()->create([
                     'method' => 'BANK_TRANSFER', 'status' => 'PENDING', 'amount' => $amount,
                     'reference' => trim($reference), 'receipt_path' => $storedPath, 'receipt_mime' => $receipt->getMimeType(),
-                    'submitted_by' => $actor->id, 'submitted_at' => now(),
+                    'submitted_by' => $actor->id, 'submitted_at' => $submittedAt,
                 ]);
             });
         } catch (\Throwable $exception) {
@@ -65,12 +67,13 @@ class PaymentService
         }
 
         return DB::transaction(function () use ($invoice, $actor, $amount, $reference) {
-            $invoice = $this->lockPayableInvoice($invoice, $amount);
+            $submittedAt = CarbonImmutable::now();
+            $invoice = $this->lockPayableInvoice($invoice, $amount, $submittedAt);
 
             return $invoice->payments()->create([
                 'method' => 'CASH', 'status' => 'PENDING', 'amount' => $amount,
                 'reference' => $reference === null ? null : trim($reference),
-                'submitted_by' => $actor->id, 'submitted_at' => now(),
+                'submitted_by' => $actor->id, 'submitted_at' => $submittedAt,
             ]);
         });
     }
@@ -111,6 +114,8 @@ class PaymentService
                 $invoice->update(['status' => 'PAID']);
                 if ($invoice->type === 'INITIAL') {
                     $this->memberships->activateInitialPayment($payment);
+                } elseif ($invoice->type === 'RENEWAL') {
+                    $this->memberships->renewVerifiedPayment($payment);
                 }
             }
 
@@ -118,7 +123,7 @@ class PaymentService
         });
     }
 
-    private function lockPayableInvoice(Invoice $invoice, string $amount): Invoice
+    private function lockPayableInvoice(Invoice $invoice, string $amount, CarbonImmutable $submittedAt): Invoice
     {
         $invoice = Invoice::query()->lockForUpdate()->findOrFail($invoice->id);
         if ($invoice->status !== 'UNPAID') {
@@ -130,6 +135,8 @@ class PaymentService
         if ($invoice->payments()->whereIn('status', ['PENDING', 'VERIFIED'])->exists()) {
             throw ValidationException::withMessages(['payment' => ['This invoice already has a pending or verified payment.']]);
         }
+
+        $this->memberships->assertRenewalPayable($invoice, $submittedAt);
 
         return $invoice;
     }
