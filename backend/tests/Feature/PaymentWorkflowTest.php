@@ -7,6 +7,9 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Services\AuthService;
 use App\Services\PaymentService;
+use App\Services\RegistrationService;
+use App\Services\RegistrationReviewService;
+use Database\Seeders\DemoFeeSeeder;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -37,7 +40,15 @@ class PaymentWorkflowTest extends TestCase
 
     private function invoice(User $owner): Invoice
     {
-        return Invoice::factory()->create(['person_id' => $owner->person_id, 'type' => 'INITIAL', 'total' => '70.00']);
+        $this->seed(DemoFeeSeeder::class);
+        $owner->markEmailAsVerified();
+        $registration = app(RegistrationService::class)->createDraft($owner);
+        app(RegistrationService::class)->submit($registration, $owner);
+        app(RegistrationReviewService::class)->review(
+            $registration, $this->account('approver-'.$owner->id, 'COMMITTEE'), 'APPROVE'
+        );
+
+        return Invoice::where('registration_id', $registration->id)->sole();
     }
 
     private function receipt(): UploadedFile
@@ -109,7 +120,10 @@ class PaymentWorkflowTest extends TestCase
         $this->assertSame($reviewer->id, $payment->reviewed_by);
         $this->assertSame('2026-10-20 12:00:00', $payment->verified_at->format('Y-m-d H:i:s'));
         $this->assertNull($payment->rejection_reason);
-        $this->assertDatabaseCount('members', 0);
+        $this->assertDatabaseCount('members', 1);
+        $this->assertDatabaseCount('memberships', 1);
+        $this->assertDatabaseCount('membership_periods', 1);
+        $this->assertDatabaseCount('membership_events', 1);
         $this->postJson("/api/committee/payments/{$id}/review", ['decision' => 'VERIFY'])->assertUnprocessable();
         $this->assertDatabaseCount('payments', 1);
     }

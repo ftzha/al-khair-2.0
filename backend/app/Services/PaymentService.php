@@ -13,7 +13,7 @@ use Illuminate\Validation\ValidationException;
 
 class PaymentService
 {
-    public function __construct(private readonly FeeRateService $money) {}
+    public function __construct(private readonly FeeRateService $money, private readonly MembershipService $memberships) {}
 
     public function authorizeCommittee(User $actor): void
     {
@@ -109,6 +109,9 @@ class PaymentService
             ]);
             if ($decision === 'VERIFY') {
                 $invoice->update(['status' => 'PAID']);
+                if ($invoice->type === 'INITIAL') {
+                    $this->memberships->activateInitialPayment($payment);
+                }
             }
 
             return $payment;

@@ -52,7 +52,7 @@ al-khair-2.0/
 
 ## Development Status
 
-**Status:** M4 complete; M5 initial billing foundation in progress.
+**Status:** M4 and M5 complete; M6 membership lifecycle in progress.
 
 - M1: Project setup, identity and authentication backend.
 - M2: Registration and committee approval backend.
@@ -84,7 +84,7 @@ docker compose exec frontend npm run build
 
 ### M5 Billing Foundation
 
-The billing foundation tests, migrations and local demonstration seeding passed as reported by the developer. Member invoice API and pages passed automated checks and browser testing, as reported by the developer. The payment backend tests and migration passed as reported by the developer. Member receipt submission and committee payment screens are implemented, pending frontend checks and browser testing.
+M5 backend and frontend checks, migrations, demonstration seeding, and manual bank transfer/cash payment testing passed as reported by the developer. M5 and the subsequent navigation/dashboard refinements have been committed and pushed by the developer.
 
 Initial invoices are issued atomically with application approval. They belong to the Person and Registration before any membership activation; no member is created. The invoice contains separate registration and annual items, stores their historical amounts, and is due 30 Malaysia calendar days after issuance. Missing or ambiguous rates roll back approval. Initial invoice creation uses row locking and a unique billing key to prevent duplicate billing.
 
@@ -97,7 +97,17 @@ docker compose exec app php artisan migrate
 docker compose exec app php artisan db:seed --class=DemoFeeSeeder
 ```
 
-No existing approved applications are automatically backfilled. The payment backend supports full bank transfers with private PDF/JPG/PNG receipts up to 2 MB, committee-recorded cash, and independent verification/rejection. PENDING payments block another submission for that invoice. Receipt downloads require owner or committee authorization and use no-store attachment responses. Verification updates payment and invoice atomically without activating membership. Both the submitter and invoice owner are prohibited from reviewing the payment. Submission, review and verification timestamps are server-recorded. Annual-renewal cutoff enforcement remains M6 work; invoice payment due dates do not implement the renewal deadline. Membership activation and waiting periods remain M6 work.
+No existing approved applications are automatically backfilled. The payment backend supports full bank transfers with private PDF/JPG/PNG receipts up to 2 MB, committee-recorded cash, and independent verification/rejection. PENDING payments block another submission for that invoice. Receipt downloads require owner or committee authorization and use no-store attachment responses. M5 verification updates payment and invoice atomically; the M6 activation integration is described below. Both the submitter and invoice owner are prohibited from reviewing the payment. Submission, review and verification timestamps are server-recorded. Annual-renewal cutoff enforcement remains in the next M6 batch; invoice payment due dates do not implement the renewal deadline.
+
+### M6 — Activation foundation
+
+The first M6 backend batch adds memberships, calendar-year membership periods and append-only lifecycle events. Initial-payment verification now creates membership atomically with marking the payment VERIFIED and invoice PAID. Activation rechecks the approved registration and independent verification; row locks and unique constraints prevent duplicate activation. Membership numbers are generated once and existing numbers are preserved.
+
+The activation date is the verified payment timestamp's date in Asia/Kuala_Lumpur. The initial waiting period ends at 00:00 Malaysia time on that date plus 90 calendar days. Eligibility is calculated as of a requested instant using lifecycle events, paid periods and verification timestamps, rather than stored as a boolean.
+
+An initial invoice retains its original billing year when verification crosses New Year. Its period remains January 1–December 31 of that billing year, and activation still starts on the verification date. A separate annual-only renewal is required for the new year; the initial invoice is not reassigned. Renewal generation, January grace-period enforcement and membership UI are the next M6 batch.
+
+These changes do not automatically backfill previously verified M5 payments. No existing invoices or fee configurations are rewritten. The new backend tests await execution in Docker; PHP syntax checks passed.
 
 ### Next Milestones
 
